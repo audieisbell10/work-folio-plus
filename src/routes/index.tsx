@@ -87,34 +87,17 @@ function Section({
 function IntroSection() {
   return (
     <section id="intro" className="border-b border-border/60">
-      <div className="mx-auto grid max-w-6xl gap-12 px-6 py-28 md:grid-cols-[1fr_auto] md:py-40">
-        <div>
-          <p className="mb-8 text-xs uppercase tracking-[0.2em] text-secondary">
-            {intro.eyebrow} — {site.role}
-          </p>
-          <h1 className="max-w-3xl font-serif text-4xl leading-[1.1] text-foreground md:text-6xl">
-            {intro.heading}
-          </h1>
-          <div className="mt-10 max-w-xl space-y-4 text-base leading-relaxed text-muted-foreground md:text-lg">
-            {intro.body.map((p, i) => (
-              <p key={i}>{p}</p>
-            ))}
-          </div>
-        </div>
-        <div className="hidden w-56 flex-shrink-0 self-start md:block">
-          {intro.portrait ? (
-            <img
-              src={intro.portrait}
-              alt={site.name}
-              className="aspect-[3/4] w-full rounded-sm object-cover shadow-sm"
-            />
-          ) : (
-            <div className="flex aspect-[3/4] w-full items-center justify-center rounded-sm border border-dashed border-border bg-muted/50">
-              <span className="text-xs uppercase tracking-[0.15em] text-muted-foreground">
-                Portrait
-              </span>
-            </div>
-          )}
+      <div className="mx-auto max-w-6xl px-6 py-28 md:py-40">
+        <p className="mb-8 text-xs uppercase tracking-[0.2em] text-secondary">
+          {intro.eyebrow} — {site.role}
+        </p>
+        <h1 className="max-w-3xl font-serif text-4xl leading-[1.1] text-foreground md:text-6xl">
+          {intro.heading}
+        </h1>
+        <div className="mt-10 max-w-xl space-y-4 text-base leading-relaxed text-muted-foreground md:text-lg">
+          {intro.body.map((p, i) => (
+            <p key={i}>{p}</p>
+          ))}
         </div>
       </div>
     </section>
@@ -240,37 +223,58 @@ function LinkedWorksSection() {
   );
 }
 
+function PortraitFrame({ src }: { src: string }) {
+  return src ? (
+    <img
+      src={src}
+      alt={site.name}
+      className="aspect-[3/4] w-full rounded-sm object-cover shadow-sm"
+    />
+  ) : (
+    <div className="flex aspect-[3/4] w-full items-center justify-center rounded-sm border border-dashed border-primary-foreground/40 bg-primary-foreground/10">
+      <span className="text-xs uppercase tracking-[0.15em] opacity-60">
+        Portrait
+      </span>
+    </div>
+  );
+}
+
 function ContactSection() {
   return (
     <section id="contact" className="bg-primary text-primary-foreground">
-      <div className="mx-auto max-w-6xl px-6 py-28 md:py-36">
-        <p className="mb-8 text-xs uppercase tracking-[0.2em] opacity-70">Contact</p>
-        <h2 className="max-w-3xl font-serif text-4xl leading-tight md:text-6xl">
-          {contact.heading}
-        </h2>
-        <p className="mt-6 max-w-xl text-base leading-relaxed opacity-80 md:text-lg">
-          {contact.body}
-        </p>
-        <a
-          href={`mailto:${contact.email}`}
-          className="mt-10 inline-block border-b border-primary-foreground/40 pb-1 font-serif text-2xl transition-colors hover:border-primary-foreground md:text-3xl"
-        >
-          {contact.email}
-        </a>
-        <ul className="mt-12 flex flex-wrap gap-x-8 gap-y-3 text-sm">
-          {contact.links.map((l) => (
-            <li key={l.href}>
-              <a
-                href={l.href}
-                target="_blank"
-                rel="noreferrer"
-                className="opacity-70 transition-opacity hover:opacity-100"
-              >
-                {l.label} ↗
-              </a>
-            </li>
-          ))}
-        </ul>
+      <div className="mx-auto grid max-w-6xl gap-12 px-6 py-28 md:grid-cols-[1fr_auto] md:py-36">
+        <div>
+          <p className="mb-8 text-xs uppercase tracking-[0.2em] opacity-70">Contact</p>
+          <h2 className="max-w-3xl font-serif text-4xl leading-tight md:text-6xl">
+            {contact.heading}
+          </h2>
+          <p className="mt-6 max-w-xl text-base leading-relaxed opacity-80 md:text-lg">
+            {contact.body}
+          </p>
+          <a
+            href={`mailto:${contact.email}`}
+            className="mt-10 inline-block border-b border-primary-foreground/40 pb-1 font-serif text-2xl transition-colors hover:border-primary-foreground md:text-3xl"
+          >
+            {contact.email}
+          </a>
+          <ul className="mt-12 flex flex-wrap gap-x-8 gap-y-3 text-sm">
+            {contact.links.map((l) => (
+              <li key={l.href}>
+                <a
+                  href={l.href}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="opacity-70 transition-opacity hover:opacity-100"
+                >
+                  {l.label} ↗
+                </a>
+              </li>
+            ))}
+          </ul>
+        </div>
+        <div className="w-48 flex-shrink-0 self-start md:w-56">
+          <PortraitFrame src={intro.portrait} />
+        </div>
       </div>
     </section>
   );
