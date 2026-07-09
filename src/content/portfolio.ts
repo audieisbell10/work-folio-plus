@@ -19,8 +19,8 @@ export const intro = {
   eyebrow: "Portfolio",
   heading: "A quiet record of words, images, and campaigns.",
   body: [
-    "I write essays, make photographs, and build marketing campaigns for people and brands I believe in.",
-    "This site is a living archive. Everything here is editable — swap the copy, add a piece of writing, drop in a new image, or link out to a case study.",
+    "I am a recent college graduate from Harding University. I have earned a bachelor's degree in IMC and am looking forward to starting my career here in DFW. I enjoy reading, writing, photography and constantly learning about the world. ",
+    "This site is an archive of past works, from academic assignments to passion projects. I enjoy keeping this digital space up to date and hope you enjoy :)",
   ],
   // Optional portrait image URL. Leave "" to hide.
   portrait: "",
