@@ -241,8 +241,8 @@ function PortraitFrame({ src }: { src: string }) {
 
 function ContactSection() {
   return (
-    <section id="contact" className="bg-primary text-primary-foreground">
-      <div className="mx-auto grid max-w-6xl gap-12 px-6 py-28 md:grid-cols-[1fr_auto] md:py-36">
+    <section id="contact" className="bg-secondary text-secondary-foreground">
+      <div className="mx-auto max-w-6xl px-6 py-28 md:py-36">
         <div>
           <p className="mb-8 text-xs uppercase tracking-[0.2em] opacity-70">Contact</p>
           <h2 className="max-w-3xl font-serif text-4xl leading-tight md:text-6xl">
@@ -251,16 +251,16 @@ function ContactSection() {
           <p className="mt-6 max-w-xl text-base leading-relaxed opacity-80 md:text-lg">
             {contact.body}
           </p>
-          <a
+          
             href={`mailto:${contact.email}`}
-            className="mt-10 inline-block border-b border-primary-foreground/40 pb-1 font-serif text-2xl transition-colors hover:border-primary-foreground md:text-3xl"
+            className="mt-10 inline-block border-b border-secondary-foreground/40 pb-1 font-serif text-2xl transition-colors hover:border-secondary-foreground md:text-3xl"
           >
             {contact.email}
           </a>
           <ul className="mt-12 flex flex-wrap gap-x-8 gap-y-3 text-sm">
             {contact.links.map((l) => (
               <li key={l.href}>
-                <a
+                
                   href={l.href}
                   target="_blank"
                   rel="noreferrer"
@@ -271,9 +271,6 @@ function ContactSection() {
               </li>
             ))}
           </ul>
-        </div>
-        <div className="w-48 flex-shrink-0 self-start md:w-56">
-          <PortraitFrame src={intro.portrait} />
         </div>
       </div>
     </section>
