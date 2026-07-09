@@ -7,17 +7,17 @@
 // ----------------------------------------------------------------
 
 export const site = {
-  name: "Your Name",
-  role: "Writer · Photographer · Marketer",
+  name: "Audie T. Isbell",
+  role: "IMC Professional · Writer · Photographer",
   // Shown in the browser tab and social shares.
-  seoTitle: "Your Name — Portfolio",
+  seoTitle: "Audie T. Isbell — Portfolio",
   seoDescription:
-    "Selected writings, photography, and marketing campaigns by Your Name.",
+    "Selected writings, photography, and marketing campaigns by Audie T. Isbell.",
 };
 
 export const intro = {
   eyebrow: "Portfolio",
-  heading: "A quiet record of words, images, and campaigns.",
+  heading: "Works of Audie T. Isbell",
   body: [
     "I am a recent college graduate from Harding University. I have earned a bachelor's degree in IMC and am looking forward to starting my career here in DFW. I enjoy reading, writing, photography and constantly learning about the world. ",
     "This site is an archive of past works, from academic assignments to passion projects. I enjoy keeping this digital space up to date and hope you enjoy :)",
