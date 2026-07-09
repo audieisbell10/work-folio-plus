@@ -138,19 +138,19 @@ export type Photo = {
 };
 
 export const photography: Photo[] = [
-  { src: "/rome-spanish-steps.jpg", alt: "View down the street from the Spanish Steps, Rome", caption: "Rome, Italy", aspect: "tall" },
-  { src: "/hillside-houses.jpg", alt: "Colorful houses on a wooded hillside above a lake", caption: "Lakeside, Europe", aspect: "wide" },
-  { src: "/autumn-walk.jpg", alt: "Two figures walking a wooded path toward a lake", caption: "Early fall", aspect: "wide" },
-  { src: "/red-ensign-sunset.jpg", alt: "A red ensign flag backlit at sunset", caption: "Last light", aspect: "wide" },
-  { src: "/sculpture-eoa.jpg", alt: "Red triceratops sculpture on painted letter blocks", caption: "Roadside", aspect: "wide" },
-  { src: "/cowboy-stage.jpg", alt: "Performer in a cowboy hat on stage in colored light", caption: "Live show", aspect: "wide" },
-  { src: "/morning-hills.jpg", alt: "Rolling hills at first light with trees in the foreground", caption: "Morning", aspect: "wide" },
-  { src: "/above-the-clouds.jpg", alt: "A hiker resting above a sea of clouds at sunrise", caption: "Colorado summit", aspect: "wide" },
-  { src: "/barn-session.jpg", alt: "Drummer performing in a barn, black and white", caption: "Black & white", aspect: "wide" },
-  { src: "/bee-goldenrod.jpg", alt: "A bumblebee on yellow goldenrod", caption: "Alpine wildflowers", aspect: "wide" },
-  { src: "/ridge-dawn.jpg", alt: "Hikers ascending a mountain ridge at dawn", caption: "Colorado", aspect: "wide" },
-  { src: "/graduation.jpg", alt: "Three graduates inside an 'Inspired Purpose' frame", caption: "Harding University, 2026", aspect: "wide" },
-  { src: "/concert-crowd.jpg", alt: "Band performing to a crowd with raised hands, black and white", caption: "Live, 2024", aspect: "wide" },
+  { src: "/rome-spanish-steps.jpg", alt: , caption: "Spanish Steps, Rome, Italy", aspect: "tall" },
+  { src: "/hillside-houses.jpg", alt: , caption: "Lake Zurich, Switzerland", aspect: "wide" },
+  { src: "/autumn-walk.jpg", alt: , caption: "Walk in the NorthEast", aspect: "wide" },
+  { src: "/red-ensign-sunset.jpg", alt: , caption: "Last light", aspect: "wide" },
+  { src: "/sculpture-eoa.jpg", alt: , caption: "Rockwell's legos", aspect: "wide" },
+  { src: "/cowboy-stage.jpg", alt: , caption: "Steelbirds show", aspect: "wide" },
+  { src: "/morning-hills.jpg", alt: , caption: "New England", aspect: "wide" },
+  { src: "/above-the-clouds.jpg", alt: , caption: "Mt. Elbert summit hike", aspect: "wide" },
+  { src: "/barn-session.jpg", alt: , caption: "Steelbirds show", aspect: "wide" },
+  { src: "/bee-goldenrod.jpg", alt: , caption: "Alpine wildflowers", aspect: "wide" },
+  { src: "/ridge-dawn.jpg", alt: , caption: "Mt. Princeton", aspect: "wide" },
+  { src: "/graduation.jpg", alt: , caption: "Harding University Graduation", aspect: "wide" },
+  { src: "/concert-crowd.jpg", alt: , caption: "Outdoor concert", aspect: "wide" },
 ];
 
 // ---------------- LINKED WORKS ----------------
