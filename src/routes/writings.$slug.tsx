@@ -1,8 +1,8 @@
 import { createFileRoute, Link, notFound } from "@tanstack/react-router";
-import { writings, site } from "../content/portfolio";
+import { writings, site, type Writing } from "../content/portfolio";
 
 export const Route = createFileRoute("/writings/$slug")({
-  loader: ({ params }) => {
+  loader: ({ params }): { writing: Writing } => {
     const writing = writings.find((w) => w.slug === params.slug);
     if (!writing) throw notFound();
     return { writing };
