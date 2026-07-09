@@ -149,9 +149,9 @@ export const linkedWorks: LinkedWork[] = [
 export const contact = {
   heading: "Let's talk.",
   body: "Commissions, collaborations, or a note about something you read here — all welcome.",
-  email: "hello@yourdomain.com",
+  email: "audieisbell@gmail.com",
   links: [
-    { label: "Email", href: "mailto:hello@yourdomain.com" },
+    { label: "Email", href: "mailto:audieisbell@gmail.com" },
     { label: "Instagram", href: "https://instagram.com/yourhandle" },
     { label: "Are.na", href: "https://are.na/yourhandle" },
     { label: "LinkedIn", href: "https://linkedin.com/in/yourhandle" },
