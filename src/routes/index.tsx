@@ -101,13 +101,21 @@ function IntroSection() {
             ))}
           </div>
         </div>
-        {intro.portrait ? (
-          <img
-            src={intro.portrait}
-            alt={site.name}
-            className="hidden h-64 w-48 rounded-sm object-cover shadow-sm md:block"
-          />
-        ) : null}
+        <div className="hidden w-56 flex-shrink-0 self-start md:block">
+          {intro.portrait ? (
+            <img
+              src={intro.portrait}
+              alt={site.name}
+              className="aspect-[3/4] w-full rounded-sm object-cover shadow-sm"
+            />
+          ) : (
+            <div className="flex aspect-[3/4] w-full items-center justify-center rounded-sm border border-dashed border-border bg-muted/50">
+              <span className="text-xs uppercase tracking-[0.15em] text-muted-foreground">
+                Portrait
+              </span>
+            </div>
+          )}
+        </div>
       </div>
     </section>
   );
