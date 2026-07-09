@@ -22,9 +22,8 @@ export const intro = {
   eyebrow: "Portfolio",
   heading: "Works of Audie T. Isbell",
   body: [
-    "I am a recent college graduate from Harding University. I have earned a bachelor's degree in IMC and am looking forward to starting my career here in DFW. I enjoy reading, writing, photography and constantly learning about the world."
-
-"This site is an archive of past works, from academic assignments to passion projects. I enjoy keeping this digital space up to date and hope you enjoy."
+    "I am a recent college graduate from Harding University. I have earned a bachelor's degree in IMC and am looking forward to starting my career here in DFW. I enjoy reading, writing, photography and constantly learning about the world.",
+    "This site is an archive of past works, from academic assignments to passion projects. I enjoy keeping this digital space up to date and hope you enjoy.",
   ],
   // Add your photo to /public, then set this to "/portrait.jpg"
   portrait: "",
@@ -49,7 +48,7 @@ export const writings: Writing[] = [
     date: "May 2026",
     category: "Research",
     excerpt:
-      "A survey of 28 university students on how AI is reshaping their academic work — and which human skills they believe it can never replace. Grounded in Postman's Media Ecology.",
+      "A survey of 28 communication students on how AI is reshaping their academic work — and which human skills they believe it can never replace. Grounded in Postman's Media Ecology.",
     body: [
       "Abstract",
       "As artificial intelligence becomes embedded in the academic lives of college students around the world, questions arise about what this integration is doing to the students who use it. This study is grounded in Neil Postman's Media Ecology framework, which frames AI not only as a tool but as a force reshaping how communication is practiced and learned. This study examines communication students' AI usage habits, perceptions of AI literacy needs, and identification of irreplaceable human skills. A self-administered quantitative survey was distributed to communication students at Harding University in Searcy, Arkansas, yielding a sample group of 28 respondents. Results indicate that the overwhelming majority of participants are active AI users, with at least 79% reporting at least occasional use for academic purposes. Of those, 28.6% reported a measurable reduction in their critical thinking ability, which is a pattern consistent with prior research on cognitive offloading. Empathy emerged as the most widely recognized irreplaceable human skill, selected by 85.7% of respondents, followed closely by relationship building and nonverbal communication at 78.6% each. Taking into account these findings, they suggest that AI integration is not merely reshaping academic efficiency but is actively altering how students understand their own value and personal identity as communicators.",
