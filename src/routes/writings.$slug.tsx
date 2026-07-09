@@ -65,7 +65,7 @@ function WritingPage() {
         </p>
 
         <div className="mt-12 space-y-6 font-serif text-lg leading-[1.75] text-foreground md:text-xl">
-          {writing.body.map((p, i) => (
+          {writing.body.map((p: string, i: number) => (
             <p key={i}>{p}</p>
           ))}
         </div>
