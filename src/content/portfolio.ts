@@ -26,7 +26,7 @@ export const intro = {
     "This site is an archive of past works, from academic assignments to passion projects. I enjoy keeping this digital space up to date and hope you enjoy.",
   ],
   // Add your photo to /public, then set this to "/portrait.jpg"
-  portrait: "",
+  portrait: "/portrait.jpg",
 };
 
 // ---------------- WRITINGS ----------------
@@ -138,12 +138,19 @@ export type Photo = {
 };
 
 export const photography: Photo[] = [
-  { src: "", alt: "Summit at first light, Colorado", caption: "Team Ascend, 2023", aspect: "tall" },
-  { src: "", alt: "Coastline, New Zealand", caption: "Study abroad, 2022", aspect: "wide" },
-  { src: "", alt: "Portrait, studio", caption: "Portrait series", aspect: "square" },
-  { src: "", alt: "Fort Worth stockyards", caption: "DFW", aspect: "square" },
-  { src: "", alt: "Field at dusk, Arkansas", caption: "Field study", aspect: "wide" },
-  { src: "", alt: "Still life", caption: "Studio", aspect: "tall" },
+  { src: "/rome-spanish-steps.jpg", alt: "View down the street from the Spanish Steps, Rome", caption: "Rome, Italy", aspect: "tall" },
+  { src: "/hillside-houses.jpg", alt: "Colorful houses on a wooded hillside above a lake", caption: "Lakeside, Europe", aspect: "wide" },
+  { src: "/autumn-walk.jpg", alt: "Two figures walking a wooded path toward a lake", caption: "Early fall", aspect: "wide" },
+  { src: "/red-ensign-sunset.jpg", alt: "A red ensign flag backlit at sunset", caption: "Last light", aspect: "wide" },
+  { src: "/sculpture-eoa.jpg", alt: "Red triceratops sculpture on painted letter blocks", caption: "Roadside", aspect: "wide" },
+  { src: "/cowboy-stage.jpg", alt: "Performer in a cowboy hat on stage in colored light", caption: "Live show", aspect: "wide" },
+  { src: "/morning-hills.jpg", alt: "Rolling hills at first light with trees in the foreground", caption: "Morning", aspect: "wide" },
+  { src: "/above-the-clouds.jpg", alt: "A hiker resting above a sea of clouds at sunrise", caption: "Colorado summit", aspect: "wide" },
+  { src: "/barn-session.jpg", alt: "Drummer performing in a barn, black and white", caption: "Black & white", aspect: "wide" },
+  { src: "/bee-goldenrod.jpg", alt: "A bumblebee on yellow goldenrod", caption: "Alpine wildflowers", aspect: "wide" },
+  { src: "/ridge-dawn.jpg", alt: "Hikers ascending a mountain ridge at dawn", caption: "Colorado", aspect: "wide" },
+  { src: "/graduation.jpg", alt: "Three graduates inside an 'Inspired Purpose' frame", caption: "Harding University, 2026", aspect: "wide" },
+  { src: "/concert-crowd.jpg", alt: "Band performing to a crowd with raised hands, black and white", caption: "Live, 2024", aspect: "wide" },
 ];
 
 // ---------------- LINKED WORKS ----------------
