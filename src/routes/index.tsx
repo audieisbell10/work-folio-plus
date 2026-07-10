@@ -184,7 +184,7 @@ function LinkedWorksSection() {
     <Section id="works" eyebrow="Linked Works" title="Campaigns, collaborations, and clients.">
       <div className="grid gap-6 md:grid-cols-2">
         {linkedWorks.map((w) => (
-          
+          <a
             key={w.title}
             href={w.href}
             target="_blank"
@@ -251,7 +251,7 @@ function ContactSection() {
           <p className="mt-6 max-w-xl text-base leading-relaxed opacity-80 md:text-lg">
             {contact.body}
           </p>
-          
+          <a
             href={`mailto:${contact.email}`}
             className="mt-10 inline-block border-b border-primary-foreground/40 pb-1 font-serif text-2xl transition-colors hover:border-primary-foreground md:text-3xl"
           >
@@ -260,7 +260,7 @@ function ContactSection() {
           <ul className="mt-12 flex flex-wrap gap-x-8 gap-y-3 text-sm">
             {contact.links.map((l) => (
               <li key={l.href}>
-                
+                <a
                   href={l.href}
                   target="_blank"
                   rel="noreferrer"
