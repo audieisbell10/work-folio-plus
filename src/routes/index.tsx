@@ -241,7 +241,7 @@ function PortraitFrame({ src }: { src: string }) {
 
 function ContactSection() {
   return (
-    <section id="contact" className="bg-secondary text-secondary-foreground" style={{ backgroundColor: "oklch(0.62 0.045 135)"}}>
+    <section id="contact" className="text-secondary-foreground" style={{ backgroundColor: "oklch(0.62 0.045 135)" }}>
       <div className="mx-auto max-w-6xl px-6 py-28 md:py-36">
         <div>
           <p className="mb-8 text-xs uppercase tracking-[0.2em] opacity-70">Contact</p>
