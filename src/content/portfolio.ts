@@ -12,17 +12,17 @@
 
 export const site = {
   name: "Audie T. Isbell",
-  role: "Integrated Marketing Communications Professional \u00b7 Writer \u00b7 Photographer",
+  role: "IMC Professional \u00b7 Writer \u00b7 Photographer",
   seoTitle: "Audie T. Isbell \u2014 Portfolio",
   seoDescription:
-    "Marketing communications, writing, and photography by Audie T. Isbell \u2014 an AAF Gold Award\u2013winning Integrated Marketing Communications graduate based in Fort Worth, TX.",
+    "Marketing communications, writing, and photography by Audie T. Isbell \u2014 an AAF Gold Award\u2013winning IMC graduate based in Fort Worth, TX.",
 };
 
 export const intro = {
   eyebrow: "Portfolio",
   heading: "Works of Audie T. Isbell",
   body: [
-    "I am a recent college graduate from Harding University. I have earned a bachelor's degree in Integrated Marketing Communications and am looking forward to starting my career here in DFW. I enjoy reading, writing, photography and constantly learning about the world.",
+    "I am a recent college graduate from Harding University. I have earned a bachelor's degree in IMC and am looking forward to starting my career here in DFW. I enjoy reading, writing, photography and constantly learning about the world.",
     "This site is an archive of past works, from academic assignments to passion projects. I enjoy keeping this digital space up to date and hope you enjoy.",
   ],
   // Add your photo to /public, then set this to "/portrait.jpg"
@@ -223,7 +223,7 @@ export const contact = {
   email: "audieisbell@gmail.com",
   links: [
     { label: "Email", href: "mailto:audieisbell@gmail.com" },
-    { label: "LinkedIn", href: "https://www.linkedin.com/in/audie-i?utm_source=share_via&utm_content=profile&utm_medium=member_ios" },
- 
+    { label: "LinkedIn", href: "https://linkedin.com/in/yourhandle" },
+    { label: "Instagram", href: "https://instagram.com/yourhandle" },
   ],
 };
