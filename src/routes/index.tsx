@@ -1,5 +1,7 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { Link } from "@tanstack/react-router";
+import { useState } from "react";
+import { Menu, X } from "lucide-react";
 import {
   site,
   intro,
@@ -30,6 +32,7 @@ function Index() {
 }
 
 function SiteNav() {
+  const [menuOpen, setMenuOpen] = useState(false);
   const items = [
     { href: "#intro", label: "Intro" },
     { href: "#writings", label: "Writings" },
@@ -49,8 +52,40 @@ function SiteNav() {
               {i.label}
             </a>
           ))}
+          <Link to="/clients" className="transition-colors hover:text-primary">
+            Client Gallery
+          </Link>
         </nav>
+        <button
+          type="button"
+          onClick={() => setMenuOpen((o) => !o)}
+          aria-label={menuOpen ? "Close menu" : "Open menu"}
+          aria-expanded={menuOpen}
+          className="-mr-2 p-2 text-foreground md:hidden"
+        >
+          {menuOpen ? <X className="size-5" /> : <Menu className="size-5" />}
+        </button>
       </div>
+      {menuOpen && (
+        <nav className="border-t border-border/60 px-6 pb-4 md:hidden">
+          {items.map((i) => (
+            <a
+              key={i.href}
+              href={i.href}
+              onClick={() => setMenuOpen(false)}
+              className="block py-3 text-base text-muted-foreground transition-colors hover:text-primary"
+            >
+              {i.label}
+            </a>
+          ))}
+          <Link
+            to="/clients"
+            className="block py-3 text-base text-muted-foreground transition-colors hover:text-primary"
+          >
+            Client Gallery
+          </Link>
+        </nav>
+      )}
     </header>
   );
 }

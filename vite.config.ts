@@ -12,4 +12,9 @@ export default defineConfig({
     // nitro/vite builds from this
     server: { entry: "server" },
   },
+  vite: {
+    // `cloudflare:workers` (Client Gallery photo bucket) only exists on Cloudflare.
+    // Skip it during dev dependency scanning so pre-bundling still runs.
+    optimizeDeps: { exclude: ["cloudflare:workers"] },
+  },
 });

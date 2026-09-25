@@ -9,18 +9,36 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './routes/__root'
-import { Route as SitemapDotxmlRouteImport } from './routes/sitemap[.]xml'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as SitemapDotxmlRouteImport } from './routes/sitemap[.]xml'
+import { Route as ClientPhotosSplatRouteImport } from './routes/client-photos.$'
+import { Route as ClientsIndexRouteImport } from './routes/clients.index'
+import { Route as ClientsShootRouteImport } from './routes/clients.$shoot'
 import { Route as WritingsSlugRouteImport } from './routes/writings.$slug'
 
+const IndexRoute = IndexRouteImport.update({
+  id: '/',
+  path: '/',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const SitemapDotxmlRoute = SitemapDotxmlRouteImport.update({
   id: '/sitemap.xml',
   path: '/sitemap.xml',
   getParentRoute: () => rootRouteImport,
 } as any)
-const IndexRoute = IndexRouteImport.update({
-  id: '/',
-  path: '/',
+const ClientPhotosSplatRoute = ClientPhotosSplatRouteImport.update({
+  id: '/client-photos/$',
+  path: '/client-photos/$',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ClientsIndexRoute = ClientsIndexRouteImport.update({
+  id: '/clients/',
+  path: '/clients/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ClientsShootRoute = ClientsShootRouteImport.update({
+  id: '/clients/$shoot',
+  path: '/clients/$shoot',
   getParentRoute: () => rootRouteImport,
 } as any)
 const WritingsSlugRoute = WritingsSlugRouteImport.update({
@@ -32,35 +50,73 @@ const WritingsSlugRoute = WritingsSlugRouteImport.update({
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/sitemap.xml': typeof SitemapDotxmlRoute
+  '/client-photos/$': typeof ClientPhotosSplatRoute
+  '/clients/$shoot': typeof ClientsShootRoute
   '/writings/$slug': typeof WritingsSlugRoute
+  '/clients/': typeof ClientsIndexRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/sitemap.xml': typeof SitemapDotxmlRoute
+  '/client-photos/$': typeof ClientPhotosSplatRoute
+  '/clients/$shoot': typeof ClientsShootRoute
   '/writings/$slug': typeof WritingsSlugRoute
+  '/clients': typeof ClientsIndexRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
   '/sitemap.xml': typeof SitemapDotxmlRoute
+  '/client-photos/$': typeof ClientPhotosSplatRoute
+  '/clients/$shoot': typeof ClientsShootRoute
   '/writings/$slug': typeof WritingsSlugRoute
+  '/clients/': typeof ClientsIndexRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/sitemap.xml' | '/writings/$slug'
+  fullPaths:
+    | '/'
+    | '/sitemap.xml'
+    | '/client-photos/$'
+    | '/clients/$shoot'
+    | '/writings/$slug'
+    | '/clients/'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/sitemap.xml' | '/writings/$slug'
-  id: '__root__' | '/' | '/sitemap.xml' | '/writings/$slug'
+  to:
+    | '/'
+    | '/sitemap.xml'
+    | '/client-photos/$'
+    | '/clients/$shoot'
+    | '/writings/$slug'
+    | '/clients'
+  id:
+    | '__root__'
+    | '/'
+    | '/sitemap.xml'
+    | '/client-photos/$'
+    | '/clients/$shoot'
+    | '/writings/$slug'
+    | '/clients/'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   SitemapDotxmlRoute: typeof SitemapDotxmlRoute
+  ClientPhotosSplatRoute: typeof ClientPhotosSplatRoute
+  ClientsShootRoute: typeof ClientsShootRoute
   WritingsSlugRoute: typeof WritingsSlugRoute
+  ClientsIndexRoute: typeof ClientsIndexRoute
 }
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
+    '/': {
+      id: '/'
+      path: '/'
+      fullPath: '/'
+      preLoaderRoute: typeof IndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/sitemap.xml': {
       id: '/sitemap.xml'
       path: '/sitemap.xml'
@@ -68,11 +124,25 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof SitemapDotxmlRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/': {
-      id: '/'
-      path: '/'
-      fullPath: '/'
-      preLoaderRoute: typeof IndexRouteImport
+    '/client-photos/$': {
+      id: '/client-photos/$'
+      path: '/client-photos/$'
+      fullPath: '/client-photos/$'
+      preLoaderRoute: typeof ClientPhotosSplatRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/clients/': {
+      id: '/clients/'
+      path: '/clients'
+      fullPath: '/clients/'
+      preLoaderRoute: typeof ClientsIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/clients/$shoot': {
+      id: '/clients/$shoot'
+      path: '/clients/$shoot'
+      fullPath: '/clients/$shoot'
+      preLoaderRoute: typeof ClientsShootRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/writings/$slug': {
@@ -88,7 +158,10 @@ declare module '@tanstack/react-router' {
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   SitemapDotxmlRoute: SitemapDotxmlRoute,
+  ClientPhotosSplatRoute: ClientPhotosSplatRoute,
+  ClientsShootRoute: ClientsShootRoute,
   WritingsSlugRoute: WritingsSlugRoute,
+  ClientsIndexRoute: ClientsIndexRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)

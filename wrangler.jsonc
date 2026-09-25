@@ -6,10 +6,12 @@
   // Cloudflare's build), wrangler uses it automatically. This file is the equivalent config
   // kept in source so the project is self-describing and works even before the first build.
   "$schema": "node_modules/wrangler/config-schema.json",
-  "name": "workfolio",
+  "name": "audieisbell",
   "main": ".output/server/index.mjs",
   "compatibility_date": "2026-07-05",
   "compatibility_flags": ["nodejs_compat"],
+  // Client Gallery photos. Each top-level folder in the bucket is one shoot.
+  "r2_buckets": [{ "binding": "CLIENT_PHOTOS", "bucket_name": "hoco2026" }],
   "assets": {
     "binding": "ASSETS",
     "directory": ".output/public"
