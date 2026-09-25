@@ -223,6 +223,6 @@ export const contact = {
   email: "audieisbell@gmail.com",
   links: [
     { label: "Email", href: "mailto:audieisbell@gmail.com" },
-    { label: "LinkedIn", href: "linkedin.com/in/audie-i?utm_source=share_via&utm_content=profile&utm_medium=member_ios" },
-     ],
+    { label: "LinkedIn", href: "https://www.linkedin.com/in/audie-i" },
+  ],
 };

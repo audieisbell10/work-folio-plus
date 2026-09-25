@@ -87,17 +87,22 @@ function Section({
 function IntroSection() {
   return (
     <section id="intro" className="border-b border-border/60">
-      <div className="mx-auto max-w-6xl px-6 py-28 md:py-40">
-        <p className="mb-8 text-xs uppercase tracking-[0.2em] text-secondary">
-          {intro.eyebrow} — {site.role}
-        </p>
-        <h1 className="max-w-3xl font-serif text-4xl leading-[1.1] text-foreground md:text-6xl">
-          {intro.heading}
-        </h1>
-        <div className="mt-10 max-w-xl space-y-4 text-base leading-relaxed text-muted-foreground md:text-lg">
-          {intro.body.map((p, i) => (
-            <p key={i}>{p}</p>
-          ))}
+      <div className="mx-auto grid max-w-6xl gap-12 px-6 py-28 md:grid-cols-[1fr_18rem] md:items-center md:gap-16 md:py-40">
+        <div>
+          <p className="mb-8 text-xs uppercase tracking-[0.2em] text-secondary">
+            {intro.eyebrow} — {site.role}
+          </p>
+          <h1 className="max-w-3xl font-serif text-4xl leading-[1.1] text-foreground md:text-6xl">
+            {intro.heading}
+          </h1>
+          <div className="mt-10 max-w-xl space-y-4 text-base leading-relaxed text-muted-foreground md:text-lg">
+            {intro.body.map((p, i) => (
+              <p key={i}>{p}</p>
+            ))}
+          </div>
+        </div>
+        <div className="mx-auto w-full max-w-xs md:max-w-none">
+          <PortraitFrame src={intro.portrait} />
         </div>
       </div>
     </section>
@@ -231,8 +236,8 @@ function PortraitFrame({ src }: { src: string }) {
       className="aspect-[3/4] w-full rounded-sm object-cover shadow-sm"
     />
   ) : (
-    <div className="flex aspect-[3/4] w-full items-center justify-center rounded-sm border border-dashed border-primary-foreground/40 bg-primary-foreground/10">
-      <span className="text-xs uppercase tracking-[0.15em] opacity-60">
+    <div className="flex aspect-[3/4] w-full items-center justify-center rounded-sm border border-dashed border-border bg-muted">
+      <span className="text-xs uppercase tracking-[0.15em] text-muted-foreground">
         Portrait
       </span>
     </div>

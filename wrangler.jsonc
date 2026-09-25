@@ -1,0 +1,25 @@
+{
+  // Cloudflare Worker config for this TanStack Start (Nitro) app.
+  // Paths are relative to the repo root and match what `npm run build` produces in .output/.
+  // Note: `npm run build` also generates .wrangler/deploy/config.json, which points wrangler
+  // at .output/server/wrangler.json. When that exists (i.e. right after a build, including in
+  // Cloudflare's build), wrangler uses it automatically. This file is the equivalent config
+  // kept in source so the project is self-describing and works even before the first build.
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "workfolio",
+  "main": ".output/server/index.mjs",
+  "compatibility_date": "2026-07-05",
+  "compatibility_flags": ["nodejs_compat"],
+  "assets": {
+    "binding": "ASSETS",
+    "directory": ".output/public"
+  },
+  // The server bundle ships as separate ES module chunks in .output/server; don't re-bundle them.
+  "no_bundle": true,
+  "rules": [
+    {
+      "type": "ESModule",
+      "globs": ["**/*.mjs", "**/*.js"]
+    }
+  ]
+}
