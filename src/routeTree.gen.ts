@@ -13,7 +13,7 @@ import { Route as IndexRouteImport } from './routes/index'
 import { Route as SitemapDotxmlRouteImport } from './routes/sitemap[.]xml'
 import { Route as ClientPhotosSplatRouteImport } from './routes/client-photos.$'
 import { Route as ClientsIndexRouteImport } from './routes/clients.index'
-import { Route as ClientsShootRouteImport } from './routes/clients.$shoot'
+import { Route as ClientsSplatRouteImport } from './routes/clients.$'
 import { Route as WritingsSlugRouteImport } from './routes/writings.$slug'
 
 const IndexRoute = IndexRouteImport.update({
@@ -36,9 +36,9 @@ const ClientsIndexRoute = ClientsIndexRouteImport.update({
   path: '/clients/',
   getParentRoute: () => rootRouteImport,
 } as any)
-const ClientsShootRoute = ClientsShootRouteImport.update({
-  id: '/clients/$shoot',
-  path: '/clients/$shoot',
+const ClientsSplatRoute = ClientsSplatRouteImport.update({
+  id: '/clients/$',
+  path: '/clients/$',
   getParentRoute: () => rootRouteImport,
 } as any)
 const WritingsSlugRoute = WritingsSlugRouteImport.update({
@@ -51,7 +51,7 @@ export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/sitemap.xml': typeof SitemapDotxmlRoute
   '/client-photos/$': typeof ClientPhotosSplatRoute
-  '/clients/$shoot': typeof ClientsShootRoute
+  '/clients/$': typeof ClientsSplatRoute
   '/writings/$slug': typeof WritingsSlugRoute
   '/clients/': typeof ClientsIndexRoute
 }
@@ -59,7 +59,7 @@ export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/sitemap.xml': typeof SitemapDotxmlRoute
   '/client-photos/$': typeof ClientPhotosSplatRoute
-  '/clients/$shoot': typeof ClientsShootRoute
+  '/clients/$': typeof ClientsSplatRoute
   '/writings/$slug': typeof WritingsSlugRoute
   '/clients': typeof ClientsIndexRoute
 }
@@ -68,7 +68,7 @@ export interface FileRoutesById {
   '/': typeof IndexRoute
   '/sitemap.xml': typeof SitemapDotxmlRoute
   '/client-photos/$': typeof ClientPhotosSplatRoute
-  '/clients/$shoot': typeof ClientsShootRoute
+  '/clients/$': typeof ClientsSplatRoute
   '/writings/$slug': typeof WritingsSlugRoute
   '/clients/': typeof ClientsIndexRoute
 }
@@ -78,7 +78,7 @@ export interface FileRouteTypes {
     | '/'
     | '/sitemap.xml'
     | '/client-photos/$'
-    | '/clients/$shoot'
+    | '/clients/$'
     | '/writings/$slug'
     | '/clients/'
   fileRoutesByTo: FileRoutesByTo
@@ -86,7 +86,7 @@ export interface FileRouteTypes {
     | '/'
     | '/sitemap.xml'
     | '/client-photos/$'
-    | '/clients/$shoot'
+    | '/clients/$'
     | '/writings/$slug'
     | '/clients'
   id:
@@ -94,7 +94,7 @@ export interface FileRouteTypes {
     | '/'
     | '/sitemap.xml'
     | '/client-photos/$'
-    | '/clients/$shoot'
+    | '/clients/$'
     | '/writings/$slug'
     | '/clients/'
   fileRoutesById: FileRoutesById
@@ -103,7 +103,7 @@ export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   SitemapDotxmlRoute: typeof SitemapDotxmlRoute
   ClientPhotosSplatRoute: typeof ClientPhotosSplatRoute
-  ClientsShootRoute: typeof ClientsShootRoute
+  ClientsSplatRoute: typeof ClientsSplatRoute
   WritingsSlugRoute: typeof WritingsSlugRoute
   ClientsIndexRoute: typeof ClientsIndexRoute
 }
@@ -138,11 +138,11 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ClientsIndexRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/clients/$shoot': {
-      id: '/clients/$shoot'
-      path: '/clients/$shoot'
-      fullPath: '/clients/$shoot'
-      preLoaderRoute: typeof ClientsShootRouteImport
+    '/clients/$': {
+      id: '/clients/$'
+      path: '/clients/$'
+      fullPath: '/clients/$'
+      preLoaderRoute: typeof ClientsSplatRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/writings/$slug': {
@@ -159,7 +159,7 @@ const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   SitemapDotxmlRoute: SitemapDotxmlRoute,
   ClientPhotosSplatRoute: ClientPhotosSplatRoute,
-  ClientsShootRoute: ClientsShootRoute,
+  ClientsSplatRoute: ClientsSplatRoute,
   WritingsSlugRoute: WritingsSlugRoute,
   ClientsIndexRoute: ClientsIndexRoute,
 }

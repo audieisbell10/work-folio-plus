@@ -216,12 +216,14 @@ export const linkedWorks: LinkedWork[] = [
 ];
 
 // ---------------- CLIENT GALLERY ----------------
-// Shoots come from folders in the Cloudflare R2 bucket: drag photos into
-// a folder and it appears at /clients/<folder-name> automatically.
-// Adding an entry here is OPTIONAL — only to give a shoot a nicer title,
-// a specific date, or a chosen cover photo (a file name inside the folder).
-// Without an entry, the title comes from the folder name ("emmas-30th" →
-// "Emmas 30th") and the date from when the photos were uploaded.
+// Shoots come from folders in the Cloudflare R2 bucket: every folder (and
+// every folder inside it) gets its own page automatically, e.g.
+// "Homecoming 2026/Luke and Bae" → /clients/homecoming-2026/luke-and-bae
+// Adding an entry here is OPTIONAL — only to give a folder a different title,
+// a specific date, or a chosen cover photo (a file name inside that folder).
+// `folder` is the full folder path as it appears in the bucket.
+// Without an entry, the title is the folder name and the date comes from
+// when the photos were uploaded.
 export type ClientShootConfig = {
   folder: string;
   title?: string;
@@ -230,7 +232,7 @@ export type ClientShootConfig = {
 };
 
 export const clientShoots: ClientShootConfig[] = [
-  // { folder: "emmas-30th", title: "Emma's 30th Birthday", date: "September 2026", cover: "DSC_0142.jpg" },
+  // { folder: "Homecoming 2026/Luke and Bae", title: "Luke & Bae", cover: "IMG_9801.jpg" },
 ];
 
 // ---------------- CONTACT ----------------

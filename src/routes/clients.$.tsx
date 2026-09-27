@@ -5,37 +5,39 @@ import { site } from "../content/portfolio";
 import {
   downloadUrl,
   formatBytes,
-  getClientShoot,
+  getClientFolder,
   type ClientPhoto as Photo,
 } from "../lib/client-gallery";
 import { ClientGalleryHeader } from "../components/client-gallery-header";
 import { ClientPhoto } from "../components/client-photo";
+import { ClientFolderGrid } from "../components/client-folder-card";
 
-export const Route = createFileRoute("/clients/$shoot")({
+// Any folder in the bucket, at any depth: /clients/homecoming-2026/luke-and-bae
+export const Route = createFileRoute("/clients/$")({
   loader: async ({ params }) => {
-    const result = await getClientShoot({ data: params.shoot });
-    if (result.available && !result.shoot) throw notFound();
+    const result = await getClientFolder({ data: params._splat ?? "" });
+    if (result.available && !result.folder) throw notFound();
     return result;
   },
   head: ({ loaderData }) => ({
     meta: [
       {
-        title: loaderData?.shoot
-          ? `${loaderData.shoot.title} — ${site.name}`
+        title: loaderData?.folder
+          ? `${loaderData.folder.title} — ${site.name}`
           : `Client Gallery — ${site.name}`,
       },
       { name: "robots", content: "noindex" },
     ],
   }),
-  component: ShootPage,
+  component: FolderPage,
   notFoundComponent: ShootNotFound,
 });
 
-function ShootPage() {
-  const { shoot } = Route.useLoaderData();
+function FolderPage() {
+  const { folder } = Route.useLoaderData();
   const [open, setOpen] = useState<number | null>(null);
 
-  if (!shoot) {
+  if (!folder) {
     return (
       <Shell>
         <p className="text-sm text-muted-foreground">
@@ -45,50 +47,85 @@ function ShootPage() {
     );
   }
 
+  const { photos, folders } = folder;
+  const summary = [
+    folder.date,
+    `${folder.count} ${folder.count === 1 ? "photo" : "photos"}`,
+    formatBytes(folder.bytes),
+    folders.length > 0 && `${folders.length} ${folders.length === 1 ? "gallery" : "galleries"}`,
+  ]
+    .filter(Boolean)
+    .join(" · ");
+
   return (
     <Shell>
       <div className="flex flex-col gap-8 md:flex-row md:items-end md:justify-between">
         <div>
-          <p className="mb-4 text-xs uppercase tracking-[0.2em] text-secondary">Client Gallery</p>
-          <h1 className="font-serif text-4xl leading-[1.1] md:text-5xl">{shoot.title}</h1>
-          <p className="mt-4 text-sm text-muted-foreground">
-            {[shoot.date, `${shoot.count} ${shoot.count === 1 ? "photo" : "photos"}`, formatBytes(shoot.bytes)]
-              .filter(Boolean)
-              .join(" · ")}
-          </p>
+          <nav className="mb-4 flex flex-wrap items-center gap-x-2 gap-y-1 text-xs uppercase tracking-[0.2em] text-secondary">
+            <Link to="/clients" className="transition-colors hover:text-primary">
+              Client Gallery
+            </Link>
+            {folder.crumbs.slice(0, -1).map((c) => (
+              <span key={c.slugPath} className="flex items-center gap-2">
+                <span aria-hidden>/</span>
+                <Link
+                  to="/clients/$"
+                  params={{ _splat: c.slugPath }}
+                  className="transition-colors hover:text-primary"
+                >
+                  {c.title}
+                </Link>
+              </span>
+            ))}
+          </nav>
+          <h1 className="font-serif text-4xl leading-[1.1] md:text-5xl">{folder.title}</h1>
+          <p className="mt-4 text-sm text-muted-foreground">{summary}</p>
         </div>
-        <DownloadAll photos={shoot.photos} />
+        {photos.length > 0 && <DownloadAll photos={photos} />}
       </div>
 
-      <div className="mt-14 columns-2 gap-3 md:columns-3 md:gap-4">
-        {shoot.photos.map((photo, i) => (
-          <figure
-            key={photo.key}
-            className="group relative mb-3 break-inside-avoid overflow-hidden rounded-sm bg-muted md:mb-4"
-          >
-            <button type="button" onClick={() => setOpen(i)} className="block w-full cursor-zoom-in">
-              <ClientPhoto
-                photoKey={photo.key}
-                width={800}
-                alt={photo.name}
-                loading="lazy"
-                className="w-full"
-              />
-            </button>
-            <a
-              href={downloadUrl(photo.key)}
-              download={photo.name}
-              aria-label={`Download ${photo.name}`}
-              className="absolute right-2 bottom-2 inline-flex size-9 items-center justify-center rounded-full bg-background/90 text-foreground shadow-sm transition-opacity hover:bg-background md:opacity-0 md:group-hover:opacity-100 md:focus-visible:opacity-100"
+      {folders.length > 0 && (
+        <div className="mt-14">
+          {photos.length > 0 && (
+            <h2 className="mb-6 text-xs uppercase tracking-[0.2em] text-muted-foreground">
+              Galleries
+            </h2>
+          )}
+          <ClientFolderGrid folders={folders} />
+        </div>
+      )}
+
+      {photos.length > 0 && (
+        <div className="mt-14 columns-2 gap-3 md:columns-3 md:gap-4">
+          {photos.map((photo, i) => (
+            <figure
+              key={photo.key}
+              className="group relative mb-3 break-inside-avoid overflow-hidden rounded-sm bg-muted md:mb-4"
             >
-              <Download className="size-4" />
-            </a>
-          </figure>
-        ))}
-      </div>
+              <button type="button" onClick={() => setOpen(i)} className="block w-full cursor-zoom-in">
+                <ClientPhoto
+                  photoKey={photo.key}
+                  width={800}
+                  alt={photo.name}
+                  loading="lazy"
+                  className="w-full"
+                />
+              </button>
+              <a
+                href={downloadUrl(photo.key)}
+                download={photo.name}
+                aria-label={`Download ${photo.name}`}
+                className="absolute right-2 bottom-2 inline-flex size-9 items-center justify-center rounded-full bg-background/90 text-foreground shadow-sm transition-opacity hover:bg-background md:opacity-0 md:group-hover:opacity-100 md:focus-visible:opacity-100"
+              >
+                <Download className="size-4" />
+              </a>
+            </figure>
+          ))}
+        </div>
+      )}
 
       {open !== null && (
-        <Lightbox photos={shoot.photos} index={open} onChange={setOpen} onClose={() => setOpen(null)} />
+        <Lightbox photos={photos} index={open} onChange={setOpen} onClose={() => setOpen(null)} />
       )}
     </Shell>
   );

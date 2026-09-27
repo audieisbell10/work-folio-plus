@@ -1,11 +1,11 @@
-import { createFileRoute, Link } from "@tanstack/react-router";
+import { createFileRoute } from "@tanstack/react-router";
 import { site } from "../content/portfolio";
-import { getClientShoots } from "../lib/client-gallery";
+import { getClientFolder } from "../lib/client-gallery";
 import { ClientGalleryHeader } from "../components/client-gallery-header";
-import { ClientPhoto } from "../components/client-photo";
+import { ClientFolderGrid } from "../components/client-folder-card";
 
 export const Route = createFileRoute("/clients/")({
-  loader: () => getClientShoots(),
+  loader: () => getClientFolder({ data: "" }),
   head: () => ({
     meta: [
       { title: `Client Gallery — ${site.name}` },
@@ -18,7 +18,8 @@ export const Route = createFileRoute("/clients/")({
 });
 
 function ClientGalleryPage() {
-  const { available, shoots } = Route.useLoaderData();
+  const { available, folder } = Route.useLoaderData();
+  const shoots = folder?.folders ?? [];
 
   return (
     <div className="min-h-screen bg-background font-sans text-foreground antialiased">
@@ -38,35 +39,8 @@ function ClientGalleryPage() {
         ) : shoots.length === 0 ? (
           <EmptyNote>New galleries are on the way — check back soon.</EmptyNote>
         ) : (
-          <div className="mt-16 grid gap-8 sm:grid-cols-2 lg:grid-cols-3">
-            {shoots.map((shoot) => (
-              <Link
-                key={shoot.slug}
-                to="/clients/$shoot"
-                params={{ shoot: shoot.slug }}
-                className="group block"
-              >
-                <div className="aspect-[4/3] overflow-hidden rounded-sm bg-muted">
-                  {shoot.cover && (
-                    <ClientPhoto
-                      photoKey={shoot.cover}
-                      width={900}
-                      alt=""
-                      className="h-full w-full object-cover transition-transform duration-700 group-hover:scale-[1.02]"
-                    />
-                  )}
-                </div>
-                <div className="mt-4 flex items-baseline justify-between gap-4">
-                  <h2 className="font-serif text-xl transition-colors group-hover:text-primary">
-                    {shoot.title}
-                  </h2>
-                  <span className="shrink-0 text-xs uppercase tracking-[0.15em] text-muted-foreground">
-                    {shoot.count} {shoot.count === 1 ? "photo" : "photos"}
-                  </span>
-                </div>
-                <p className="mt-1 text-sm text-muted-foreground">{shoot.date}</p>
-              </Link>
-            ))}
+          <div className="mt-16">
+            <ClientFolderGrid folders={shoots} />
           </div>
         )}
       </main>
