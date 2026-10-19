@@ -1,0 +1,1515 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Sonar Dive · Daily Trivia Game</title>
+<meta name="description" content="Sonar Dive is a free daily trivia game. Name rare answers and race through quiz questions to sink a pixel-art probe from the sunlight zone to Challenger Deep.">
+<link rel="canonical" href="https://audieisbell.com/sonardive">
+<meta name="theme-color" content="#040b18">
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="Audie Isbell">
+<meta property="og:title" content="Sonar Dive · Daily Trivia Game">
+<meta property="og:description" content="Sonar Dive is a free daily trivia game. Name rare answers and race through quiz questions to sink a pixel-art probe from the sunlight zone to Challenger Deep.">
+<meta property="og:url" content="https://audieisbell.com/sonardive">
+<meta name="twitter:card" content="summary">
+<link rel="icon" href="/favicon.ico">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=Silkscreen:wght@400;700&display=swap">
+<style>
+[hidden]{display:none!important}
+body{margin:0}
+/* Layout: a fixed pixel-ocean canvas fills the screen; one console column (max 660px) floats over it.
+   Home: title in the sky, controls below the waterline. Dive: HUD bar on top, question console docked low while the probe sinks. */
+:root{
+  --abyss:#040b18;
+  --panel:rgba(5,14,30,.88);
+  --panel-solid:#06101f;
+  --line:#24476b;
+  --ink:#e2f6ff;
+  --dim:#8eaecb;
+  --sonar:#5cf2ff;
+  --coral:#ff5a8e;
+  --kelp:#7dffa8;
+  --amber:#ffd36e;
+  --sky-ink:#10263f;
+  --display:"Silkscreen","Courier New",monospace;
+  --mono:"IBM Plex Mono",ui-monospace,Menlo,Consolas,monospace;
+  --px:polygon(6px 0,calc(100% - 6px) 0,100% 6px,100% calc(100% - 6px),calc(100% - 6px) 100%,6px 100%,0 calc(100% - 6px),0 6px);
+  color-scheme:dark;
+}
+*{box-sizing:border-box}
+html,body{height:100%}
+body{background:var(--abyss);color:var(--ink);font:15px/1.5 var(--mono);overflow:hidden;-webkit-font-smoothing:antialiased}
+canvas{position:fixed;inset:0;width:100%;height:100%;display:block}
+#sea{image-rendering:crisp-edges;image-rendering:pixelated}
+.crt{position:fixed;inset:0;pointer-events:none;z-index:1;
+  background:
+    repeating-linear-gradient(to bottom,rgba(0,0,0,.16) 0 1px,transparent 1px 3px),
+    radial-gradient(ellipse at 50% 45%,transparent 55%,rgba(0,0,0,.5) 100%)}
+#ui{position:fixed;inset:0;overflow-y:auto;overflow-x:hidden;z-index:2}
+.col{width:100%;max-width:692px;margin-inline:auto;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
+
+/* ---------- buttons ---------- */
+.btn{--c:var(--line);appearance:none;border:0;cursor:pointer;font:400 13px/1.1 var(--display);letter-spacing:.14em;text-transform:uppercase;color:var(--ink);
+  background:var(--panel);padding:13px 18px;box-shadow:inset 0 0 0 2px var(--c);clip-path:var(--px);transition:background .15s,color .15s}
+.btn:hover{--c:var(--sonar);background:rgba(14,38,66,.94)}
+.btn:focus-visible{outline:none;background:rgba(14,38,66,.96);box-shadow:inset 0 0 0 2px var(--sonar),inset 0 0 0 4px var(--panel-solid),inset 0 0 0 6px var(--sonar)}
+.btn:disabled{cursor:default}
+.btn.big{font-size:clamp(16px,3.6vw,21px);letter-spacing:.2em;padding:22px 26px;width:min(100%,520px)}
+.btn.small{font-size:11px;padding:9px 12px}
+.row{display:flex;flex-wrap:wrap;gap:10px;justify-content:center}
+
+/* ---------- home ---------- */
+#home{min-height:100%;display:flex;flex-direction:column}
+.sky{min-height:var(--surf,44vh);display:flex;flex-direction:column;justify-content:flex-end;align-items:center;text-align:center;gap:8px;
+  padding-top:calc(env(safe-area-inset-top,0px) + 64px);padding-bottom:54px}
+.logo{margin:0;font:700 clamp(54px,15vw,128px)/.95 var(--display);color:var(--sky-ink);letter-spacing:.03em;
+  text-shadow:-4px 0 0 var(--coral),4px 0 0 var(--sonar);animation:glitch 7s steps(1) infinite}
+@keyframes glitch{
+  0%,91%,100%{transform:none;text-shadow:-4px 0 0 var(--coral),4px 0 0 var(--sonar)}
+  92%{transform:translateX(3px) skewX(-7deg);text-shadow:-8px 0 0 var(--coral),7px 0 0 var(--sonar)}
+  94%{transform:translateX(-2px);text-shadow:4px 0 0 var(--coral),-5px 0 0 var(--sonar)}
+  96%{transform:none;text-shadow:-2px 1px 0 var(--coral),2px -1px 0 var(--sonar)}}
+.sub{margin:0;font:400 clamp(15px,3.4vw,23px)/1.2 var(--display);letter-spacing:.34em;color:var(--sky-ink);text-wrap:balance}
+.tag{margin:0;font-size:14px;color:var(--sky-ink);letter-spacing:.04em;text-wrap:balance}
+.topbar{position:absolute;top:calc(env(safe-area-inset-top,0px) + 14px);left:max(16px,env(safe-area-inset-left,0px));right:max(16px,env(safe-area-inset-right,0px));display:flex;justify-content:space-between;gap:10px;align-items:center}
+.pill{font:400 11px/1 var(--display);letter-spacing:.14em;color:var(--sky-ink);background:rgba(230,245,250,.65);padding:8px 10px;clip-path:var(--px)}
+.below{flex:1;display:flex;flex-direction:column;align-items:center;gap:14px;padding-top:36px;padding-bottom:calc(env(safe-area-inset-bottom,0px) + 32px);text-align:center}
+.meta{margin:0;font-size:12px;color:var(--dim);letter-spacing:.1em;text-transform:uppercase}
+.today{font-size:14px;color:var(--ink);background:var(--panel);box-shadow:inset 0 0 0 1px var(--line);padding:10px 16px;clip-path:var(--px)}
+.today b{color:var(--sonar);font-weight:600}
+.blurb{max-width:52ch;margin:6px 0 0;font-size:13px;color:var(--dim);text-align:left;line-height:1.6}
+
+/* ---------- dive ---------- */
+#game{min-height:100%;display:flex;flex-direction:column;padding-bottom:calc(env(safe-area-inset-bottom,0px) + 16px)}
+.hud{margin-top:calc(env(safe-area-inset-top,0px) + 12px);display:grid;grid-template-columns:1fr auto 1fr;align-items:center;gap:10px;
+  background:var(--panel);box-shadow:inset 0 0 0 1px var(--line);padding:10px 14px;clip-path:var(--px)}
+.hud .side{display:flex;flex-direction:column;gap:6px;font:400 10.5px/1.2 var(--display);letter-spacing:.14em;color:var(--dim);text-transform:uppercase;min-width:0}
+.hud .side.r{align-items:flex-end;text-align:right}
+.hud .side b{font-weight:400;color:var(--ink)}
+.depth{font:700 clamp(24px,6vw,38px)/1 var(--display);text-align:center;color:var(--ink);font-variant-numeric:tabular-nums;
+  text-shadow:-2px 0 0 var(--coral),2px 0 0 var(--sonar);white-space:nowrap}
+.zone{font:400 10px/1.2 var(--display);letter-spacing:.18em;color:var(--sonar);text-align:center;margin-top:6px;white-space:nowrap}
+.tanks{color:var(--sonar);letter-spacing:.1em}
+.gap{flex:1;min-height:22vh}
+.console{background:var(--panel);box-shadow:inset 0 0 0 1px var(--line);padding:18px;clip-path:polygon(10px 0,calc(100% - 10px) 0,100% 10px,100% calc(100% - 10px),calc(100% - 10px) 100%,10px 100%,0 calc(100% - 10px),0 10px);
+  display:flex;flex-direction:column;gap:14px;-webkit-backdrop-filter:blur(3px);backdrop-filter:blur(3px)}
+.console.in{animation:rise .35s ease-out}
+@keyframes rise{from{transform:translateY(12px)}to{transform:none}}
+.qmeta{display:flex;gap:10px;align-items:center;flex-wrap:wrap}
+.chip{font:400 11px/1 var(--display);letter-spacing:.16em;padding:6px 8px;background:var(--sonar);color:var(--panel-solid)}
+.chip.quiz{background:var(--amber)}
+.qtype{font-size:11px;letter-spacing:.12em;color:var(--dim);text-transform:uppercase}
+.prompt{margin:0;font:600 clamp(20px,4.6vw,27px)/1.25 var(--mono);text-wrap:balance}
+.timerrow{display:flex;align-items:center;gap:12px}
+.timer{position:relative;flex:1;height:10px;background:rgba(92,242,255,.12);overflow:hidden}
+.timer i{position:absolute;inset:0 auto 0 0;width:100%;background:var(--sonar)}
+.timer.low i{background:var(--coral)}
+.timer::after{content:"";position:absolute;inset:0;background:repeating-linear-gradient(90deg,transparent 0 calc(4% - 3px),var(--panel-solid) calc(4% - 3px) 4%)}
+#tnum{font:400 13px/1 var(--display);min-width:5ch;text-align:right;font-variant-numeric:tabular-nums}
+.openform{display:flex;gap:8px}
+.openform input{flex:1;min-width:0;font:500 17px/1.2 var(--mono);color:var(--ink);background:rgba(0,0,0,.38);border:0;border-radius:0;box-shadow:inset 0 0 0 1px var(--line);padding:14px;caret-color:var(--sonar);outline:none}
+.openform input::placeholder{color:#5f7e9b}
+.openform input:focus{box-shadow:inset 0 0 0 2px var(--sonar)}
+.shake{animation:shake .3s}
+@keyframes shake{25%{transform:translateX(-6px)}50%{transform:translateX(5px)}75%{transform:translateX(-3px)}}
+.choices{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.btn.choice{display:flex;gap:12px;align-items:center;text-align:left;font:500 15px/1.3 var(--mono);text-transform:none;letter-spacing:0;padding:14px}
+.choice kbd{font:400 11px/1 var(--display);color:var(--dim);flex:none}
+.choice.out{opacity:.38;text-decoration:line-through;--c:var(--coral)}
+.choice.right{--c:var(--kelp);color:var(--kelp)}
+.feedback{margin:0;min-height:1.4em;font-size:13px;color:var(--dim)}
+.feedback.bad{color:var(--coral)}
+.misses{display:flex;flex-wrap:wrap;gap:6px}
+.misses:empty{display:none}
+.misses span{font-size:12px;color:var(--coral);text-decoration:line-through;background:rgba(255,90,142,.1);padding:2px 7px}
+.reveal{display:flex;flex-direction:column;gap:12px}
+.rhead{display:flex;align-items:baseline;gap:14px;flex-wrap:wrap}
+.pts{font:700 clamp(36px,9vw,54px)/1 var(--display)}
+.tl{font:400 12px/1.4 var(--display);letter-spacing:.16em;text-transform:uppercase;min-width:0;overflow-wrap:anywhere}
+.note{margin:0;font-size:13px;color:var(--dim)}
+.spec{display:grid;gap:5px;font-size:13px}
+.spec h3,.endsec h3{margin:0 0 4px;font:400 11px/1 var(--display);letter-spacing:.18em;color:var(--dim);text-transform:uppercase}
+.spec div{display:grid;grid-template-columns:10px 3.2ch minmax(0,1fr);gap:10px;align-items:baseline}
+.spec b{font:400 11px var(--display);color:var(--dim)}
+.sq{display:inline-block;width:10px;height:10px}
+.deep{margin:0;font-size:13px;color:var(--ink);line-height:1.55;max-width:62ch}
+.btn.next{width:100%;margin-top:4px}
+
+/* ---------- log ---------- */
+#end{padding-top:calc(env(safe-area-inset-top,0px) + 22vh);padding-bottom:calc(env(safe-area-inset-bottom,0px) + 32px)}
+.report{gap:18px}
+.endtitle{margin:0;font:400 12px/1 var(--display);letter-spacing:.2em;color:var(--sonar);text-transform:uppercase}
+.enddepth{font:700 clamp(46px,12vw,84px)/1 var(--display);font-variant-numeric:tabular-nums;text-shadow:-3px 0 0 var(--coral),3px 0 0 var(--sonar)}
+.endzone{font:400 12px/1.3 var(--display);letter-spacing:.16em;color:var(--dim);margin-top:8px}
+.endmark{margin:0;font-size:14px;line-height:1.6;max-width:60ch}
+.endmark b{color:var(--amber);font-weight:600}
+#endLog{list-style:none;margin:0;padding:0;display:grid;gap:8px}
+#endLog li{display:grid;grid-template-columns:10px minmax(0,1fr) auto;gap:12px;align-items:baseline;font-size:13px}
+#endLog .lq{display:block;color:var(--dim)}
+#endLog .la{display:block;color:var(--ink);font-weight:500}
+#endLog b{font:400 12px var(--display);color:var(--ink);font-variant-numeric:tabular-nums}
+.share{margin:0;white-space:pre-wrap;font:500 14px/1.5 var(--mono);background:rgba(0,0,0,.35);padding:12px 14px;box-shadow:inset 0 0 0 1px var(--line);user-select:all;-webkit-user-select:all;overflow-wrap:anywhere}
+.endsec{display:flex;flex-direction:column;gap:8px}
+
+/* ---------- leaderboard ---------- */
+.board{width:min(100%,520px);text-align:left;background:var(--panel);box-shadow:inset 0 0 0 1px var(--line);padding:14px 16px;clip-path:var(--px);display:flex;flex-direction:column;gap:10px}
+.console .board{width:auto;background:none;box-shadow:none;padding:0;clip-path:none}
+.board h3{margin:0;font:400 11px/1 var(--display);letter-spacing:.18em;color:var(--sonar);text-transform:uppercase}
+.lb{list-style:none;margin:0;padding:0;display:grid;gap:10px}
+.lb li{display:grid;grid-template-columns:2.4ch 22px minmax(0,1fr) auto;column-gap:10px;row-gap:3px;align-items:center;font-size:13px}
+.lb .rk{font:400 11px var(--display);color:var(--dim)}
+.lb img{width:22px;height:22px;display:block}
+.lb .nm{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-weight:500}
+.lb li.me .nm{color:var(--sonar)}
+.lb .dp{font:400 12px var(--display);font-variant-numeric:tabular-nums;white-space:nowrap}
+.lb .sqs,.lb .ans{grid-column:3/-1;font-size:12px;color:var(--dim);overflow-wrap:anywhere}
+.lb .sqs{letter-spacing:1px}
+.lbmsg{margin:0;font-size:12.5px;color:var(--dim);line-height:1.5}
+.lbmsg:empty{display:none}
+
+/* ---------- overlays ---------- */
+.modal{position:fixed;inset:0;z-index:5;background:rgba(2,6,14,.74);display:grid;place-items:center;
+  padding:calc(env(safe-area-inset-top,0px) + 16px) max(16px,env(safe-area-inset-right,0px)) calc(env(safe-area-inset-bottom,0px) + 16px) max(16px,env(safe-area-inset-left,0px))}
+.modal .console{width:100%;max-width:580px;max-height:100%;overflow:auto}
+.modal h2{margin:0;font:400 16px/1.2 var(--display);letter-spacing:.18em;color:var(--sonar)}
+.modal p,.modal li{font-size:14px;line-height:1.6;margin:0}
+.modal ul{margin:0;padding-left:18px;display:grid;gap:8px}
+.tiers{display:grid;gap:6px;font-size:13px}
+.tiers div{display:grid;grid-template-columns:10px 4ch minmax(0,1fr);gap:10px;align-items:baseline}
+.toast{position:fixed;z-index:4;left:50%;top:calc(env(safe-area-inset-top,0px) + 104px);transform:translateX(-50%);max-width:calc(100% - 32px);
+  font:400 11px/1.5 var(--display);letter-spacing:.12em;text-transform:uppercase;text-align:center;color:var(--amber);
+  background:var(--panel);box-shadow:inset 0 0 0 1px var(--amber);padding:9px 14px;clip-path:var(--px);animation:toast 3.2s ease forwards;pointer-events:none}
+@keyframes toast{0%{opacity:0;transform:translate(-50%,-6px)}10%,80%{opacity:1;transform:translate(-50%,0)}100%{opacity:0}}
+.sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0)}
+
+@media (max-width:520px){
+  .choices{grid-template-columns:1fr}
+  .hud{grid-template-columns:1fr 1fr;grid-template-areas:"d d" "l r"}
+  .hud .mid{grid-area:d}
+  .hud .side.l{grid-area:l}
+  .hud .side.r{grid-area:r}
+  .console{padding:16px}
+  .sky{padding-bottom:46px}
+}
+@media (prefers-reduced-motion:reduce){
+  .logo,.console.in,.shake{animation:none}
+  .toast{animation:none}
+}
+</style>
+</head>
+<body>
+<canvas id="sea" aria-hidden="true"></canvas>
+<canvas id="fx" aria-hidden="true"></canvas>
+<div class="crt" aria-hidden="true"></div>
+
+<main id="ui">
+  <section id="home">
+    <div class="topbar">
+      <span class="pill" id="homeDay">Daily dive #1</span>
+      <button type="button" class="btn small" data-act="mute" id="muteHome">Sound on</button>
+    </div>
+    <div class="sky col">
+      <h1 class="logo">SONAR</h1>
+      <p class="sub">The trivia dive</p>
+      <p class="tag">7 questions · 25 seconds · rare answers sink deeper</p>
+    </div>
+    <div class="below col">
+      <div class="today" id="todayLine" hidden></div>
+      <button type="button" class="btn big" id="primaryBtn" data-act="daily">Start daily dive</button>
+      <div class="row">
+        <button type="button" class="btn" id="secondaryBtn" data-act="endless">Endless dive</button>
+        <button type="button" class="btn" data-act="how">How it works</button>
+      </div>
+      <p class="meta" id="countdown">Next daily dive in --</p>
+      <div class="board" hidden><h3>Today's divers</h3><ol class="lb"></ol><p class="lbmsg">Loading today's depths…</p></div>
+      <p class="meta" id="bestLine" hidden></p>
+      <p class="blurb">Each dive drops a probe from the research ship. Name something nobody else would think of, or snap up a quiz answer fast, and the probe sinks past real landmarks: the 332 m scuba record, the Titanic at 3,800 m, all the way to Challenger Deep.</p>
+    </div>
+  </section>
+
+  <section id="game" hidden>
+    <div class="col">
+      <div class="hud">
+        <div class="side l">
+          <span id="qcount">Dive #1 · 1/7</span>
+          <button type="button" class="btn small" data-act="quit" id="quitBtn">Surface</button>
+        </div>
+        <div class="mid">
+          <div class="depth" id="depth">0 m</div>
+          <div class="zone" id="zone">Sunlight zone</div>
+        </div>
+        <div class="side r">
+          <span><b id="score">0</b> pts</span>
+          <span class="tanks" id="tanks" hidden></span>
+          <button type="button" class="btn small" data-act="mute" id="muteGame">Sound on</button>
+        </div>
+      </div>
+    </div>
+    <div class="gap"></div>
+    <div class="col">
+      <div class="console" id="console">
+        <div class="qmeta"><span class="chip" id="qcat">Food</span><span class="qtype" id="qtype"></span></div>
+        <h2 class="prompt" id="qtext">Name a cheese</h2>
+        <div class="timerrow" id="timerRow"><div class="timer" id="timer"><i id="tfill"></i></div><span id="tnum">25.0</span></div>
+        <form class="openform" id="openForm" autocomplete="off">
+          <label class="sr" for="guess">Your answer</label>
+          <input id="guess" name="guess" type="text" placeholder="Type an answer" autocomplete="off" autocapitalize="off" autocorrect="off" spellcheck="false" enterkeyhint="send">
+          <button type="submit" class="btn">Send</button>
+        </form>
+        <div class="choices" id="choices" hidden></div>
+        <p class="feedback" id="feedback" aria-live="polite"></p>
+        <div class="misses" id="misses"></div>
+        <div class="reveal" id="reveal" hidden aria-live="polite"></div>
+      </div>
+    </div>
+  </section>
+
+  <section id="end" hidden>
+    <div class="col">
+      <div class="console report">
+        <div>
+          <p class="endtitle" id="endTitle">Dive log</p>
+          <div class="enddepth" id="endDepth">0 m</div>
+          <div class="endzone" id="endZone"></div>
+        </div>
+        <p class="endmark" id="endMark"></p>
+        <div class="endsec"><h3>Readings</h3><ol id="endLog"></ol></div>
+        <div class="board" hidden><h3>Today's divers</h3><ol class="lb"></ol><p class="lbmsg">Loading today's depths…</p></div>
+        <div class="endsec">
+          <h3>Share</h3>
+          <pre class="share" id="shareText"></pre>
+          <div class="row" style="justify-content:flex-start"><button type="button" class="btn" data-act="copy" id="copyBtn">Copy result</button></div>
+        </div>
+        <div class="row">
+          <button type="button" class="btn" data-act="home">Back to the surface</button>
+          <button type="button" class="btn" data-act="endless" id="againBtn">Endless dive</button>
+        </div>
+      </div>
+    </div>
+  </section>
+</main>
+
+<div class="modal" id="how" hidden role="dialog" aria-modal="true" aria-labelledby="howTitle">
+  <div class="console">
+    <h2 id="howTitle">How the dive works</h2>
+    <ul>
+      <li><b>Daily dive:</b> seven questions, the same for everyone, refreshed at 00:00 UTC.</li>
+      <li><b>Open water</b> prompts ask you to “name a ___”. The first valid answer locks in. Obvious answers score little; rare ones score big. A miss costs 3 seconds, so keep guessing.</li>
+      <li><b>Sonar quiz</b> questions give four choices. Answer faster for more points. Each wrong pick costs 5 seconds and halves the haul.</li>
+      <li>Every point sinks the probe 10 m. Landmarks along the way are real: dive records, the Titanic, the deepest fish ever filmed.</li>
+      <li><b>Endless dive:</b> three oxygen tanks. A question that scores nothing costs one tank.</li>
+    </ul>
+    <div class="tiers" id="tierKey"></div>
+    <div class="row" style="justify-content:flex-end"><button type="button" class="btn" data-act="closehow" id="closeHow">Got it</button></div>
+  </div>
+</div>
+<div class="toast" id="toast" hidden></div>
+
+<script>
+/* ================================================================
+   QUESTION BANK
+   Open prompts: tiers keyed by points. Items separated by ";",
+   accepted spellings separated by "/". First spelling is shown.
+   ================================================================ */
+const OPEN=[
+{c:"Geography",q:"Name a country in Africa",t:{
+10:`Egypt;South Africa;Nigeria;Kenya;Morocco;Ethiopia`,
+25:`Ghana;Algeria;Tunisia;Libya;Sudan;Somalia;Madagascar;Zimbabwe;Uganda;Tanzania;Senegal;Democratic Republic of the Congo/DRC/DR Congo/Congo-Kinshasa/Zaire;Rwanda;Angola;Cameroon;Namibia;Botswana;Mozambique;Zambia`,
+50:`Republic of the Congo/Congo/Congo-Brazzaville;Mali;Niger;Chad;Ivory Coast/Côte d'Ivoire;Liberia;Sierra Leone;Malawi;Eritrea;Mauritania;Burkina Faso;Benin;Togo;Gabon;Guinea;The Gambia/Gambia;Lesotho;Eswatini/Swaziland;Burundi;Djibouti;Central African Republic/CAR;South Sudan;Mauritius;Cape Verde/Cabo Verde;Seychelles`,
+85:`Guinea-Bissau;Equatorial Guinea;Comoros`,
+100:`São Tomé and Príncipe/Sao Tome and Principe/Sao Tome`},
+n:"Africa's second-smallest country: two volcanic islands in the Gulf of Guinea, almost on the equator."},
+
+{c:"Geography",q:"Name a country in South America",t:{
+10:`Brazil;Argentina;Colombia;Peru;Chile`,
+25:`Venezuela;Ecuador;Bolivia;Uruguay`,
+50:`Paraguay`,
+85:`Guyana`,
+100:`Suriname/Surinam`},
+n:"The smallest sovereign country in South America, and the only one where Dutch is the official language."},
+
+{c:"Geography",q:"Name a US state",t:{
+10:`California;Texas;Florida;New York`,
+25:`Washington;Oregon;Arizona;Nevada;Colorado;Illinois;Ohio;Michigan;Georgia;Pennsylvania;New Jersey;Massachusetts;Alaska;Hawaii;Louisiana;Tennessee;North Carolina;Virginia`,
+50:`Utah;New Mexico;Oklahoma;Kansas;Nebraska;Minnesota;Wisconsin;Iowa;Missouri;Arkansas;Mississippi;Alabama;Kentucky;Indiana;South Carolina;Maryland;Connecticut;Maine;Vermont;New Hampshire;Montana;Idaho;Wyoming;West Virginia`,
+85:`North Dakota;South Dakota;Rhode Island`,
+100:`Delaware`},
+n:"The First State: first to ratify the US Constitution, on December 7, 1787."},
+
+{c:"Geography",q:"Name a European capital city",t:{
+10:`London;Paris;Rome;Berlin;Madrid`,
+25:`Amsterdam;Athens;Vienna;Dublin;Lisbon;Prague;Brussels;Moscow;Stockholm;Oslo;Copenhagen;Warsaw;Budapest;Helsinki;Bern/Berne`,
+50:`Reykjavík/Reykjavik;Bucharest;Sofia;Belgrade;Kyiv/Kiev;Zagreb;Bratislava;Ljubljana;Tallinn;Riga;Vilnius;Minsk;Luxembourg/Luxembourg City;Monaco;Valletta;Sarajevo;Tirana;Skopje;Nicosia;Edinburgh;Cardiff;Belfast;Ankara;Tbilisi;Yerevan;Baku`,
+85:`Podgorica;Chișinău/Chisinau;Andorra la Vella;San Marino;Vaduz;Pristina/Priština`,
+100:`Vatican City/Vatican`},
+n:"Capital and country at once: 0.49 km², the smallest state on Earth."},
+
+{c:"Space",q:"Name a planet, dwarf planet or moon in our solar system",t:{
+10:`Earth;Mars;Jupiter;Saturn;Venus;Mercury;Neptune;Uranus;The Moon/Moon/Luna;Pluto`,
+25:`Europa;Titan;Io;Ganymede;Callisto;Phobos;Deimos;Ceres;Enceladus;Triton;Charon`,
+50:`Eris;Makemake;Haumea;Oberon;Titania;Miranda;Mimas;Iapetus;Rhea;Dione;Tethys;Hyperion;Ariel;Umbriel;Phoebe`,
+85:`Nereid;Proteus;Amalthea;Janus;Epimetheus;Himalia;Nix;Hydra;Kerberos;Styx;Pandora;Prometheus;Larissa;Puck;Thebe;Metis;Adrastea;Gonggong;Quaoar;Sedna;Orcus`,
+100:`Dysnomia`},
+n:"The moon of the dwarf planet Eris, named after the Greek spirit of lawlessness."},
+
+{c:"Science",q:"Name a chemical element",t:{
+10:`Oxygen;Hydrogen;Carbon;Gold;Iron;Helium;Nitrogen;Silver`,
+25:`Copper;Sodium;Calcium;Aluminium/Aluminum;Lead;Uranium;Chlorine;Neon;Zinc;Mercury;Potassium;Magnesium;Sulfur/Sulphur;Platinum;Titanium;Lithium;Tin;Silicon;Plutonium;Fluorine;Phosphorus;Nickel;Iodine;Argon;Radon;Cobalt;Chromium;Tungsten`,
+50:`Boron;Beryllium;Krypton;Xenon;Manganese;Arsenic;Bromine;Cadmium;Caesium/Cesium;Radium;Barium;Bismuth;Gallium;Germanium;Selenium;Strontium;Palladium;Rhodium;Iridium;Osmium;Vanadium;Antimony;Tellurium;Thorium;Francium;Polonium;Americium;Einsteinium;Scandium;Zirconium;Molybdenum;Rubidium;Indium;Thallium;Astatine;Neptunium;Curium;Californium;Nobelium;Mendelevium;Fermium;Neodymium`,
+85:`Yttrium;Ytterbium;Terbium;Erbium;Niobium;Technetium;Ruthenium;Hafnium;Tantalum;Rhenium;Lanthanum;Cerium;Praseodymium;Promethium;Samarium;Europium;Gadolinium;Dysprosium;Holmium;Thulium;Lutetium;Actinium;Protactinium;Berkelium;Lawrencium;Rutherfordium;Dubnium;Seaborgium;Bohrium;Hassium;Meitnerium;Darmstadtium;Roentgenium;Copernicium;Nihonium;Flerovium;Moscovium;Livermorium;Tennessine`,
+100:`Oganesson`},
+n:"Element 118, the heaviest ever made. Only a handful of its atoms have ever existed."},
+
+{c:"Myth",q:"Name a Greek god, goddess or Titan",t:{
+10:`Zeus;Poseidon;Hades;Athena/Athene;Aphrodite;Apollo;Ares;Hermes`,
+25:`Hera;Artemis;Demeter;Dionysus/Dionysos;Hephaestus/Hephaistos;Eros;Nike;Persephone;Hestia`,
+50:`Gaia/Gaea;Kronos/Cronus/Cronos;Rhea;Uranus/Ouranos;Helios;Selene;Eos;Pan;Nemesis;Hecate/Hekate;Hypnos;Thanatos;Iris;Morpheus;Tyche;Prometheus;Atlas;Hebe;Asclepius/Asklepios;Nyx;Chaos;Oceanus/Okeanos;Themis;Mnemosyne;Triton;Eris`,
+85:`Erebus;Tartarus;Harmonia;Phobos;Deimos;Aether;Hemera;Chronos;Metis;Leto;Hyperion;Tethys;Coeus;Phoebe;Crius;Iapetus;Boreas;Zephyrus;Notus;Eurus;Peitho;Enyo;Nereus;Proteus;Plutus;Priapus;Aeolus;Hymenaeus/Hymen;Ganymede;Aristaeus`,
+100:`Ananke`},
+n:"The primordial goddess of necessity. Even the gods couldn't argue with her."},
+
+{c:"Literature",q:"Name a play by Shakespeare",t:{
+10:`Hamlet;Romeo and Juliet;Macbeth;Othello;King Lear;A Midsummer Night's Dream`,
+25:`Julius Caesar;The Tempest;Much Ado About Nothing;Twelfth Night;The Merchant of Venice;The Taming of the Shrew;As You Like It;Richard III/Richard 3/Richard the Third;Henry V/Henry 5/Henry the Fifth;Antony and Cleopatra`,
+50:`The Winter's Tale;The Comedy of Errors;Measure for Measure;All's Well That Ends Well;The Merry Wives of Windsor;Coriolanus;Titus Andronicus;Richard II/Richard 2/Richard the Second;Henry IV/Henry 4/Henry IV Part 1/Henry IV Part 2;Henry VI/Henry 6/Henry VI Part 1/Henry VI Part 2/Henry VI Part 3;Troilus and Cressida;Cymbeline;Timon of Athens;The Two Gentlemen of Verona;Love's Labour's Lost/Loves Labors Lost;King John;Pericles/Pericles, Prince of Tyre`,
+85:`Henry VIII/Henry 8;The Two Noble Kinsmen;Edward III/Edward 3`,
+100:`Cardenio`},
+n:"A lost play, performed in 1613. No copy survives."},
+
+{c:"Film",q:"Name a Pixar feature film",t:{
+10:`Toy Story;Finding Nemo;Cars;The Incredibles;Up;Monsters, Inc.`,
+25:`WALL-E/Wall E;Ratatouille;Inside Out;Coco;A Bug's Life;Toy Story 2;Toy Story 3;Toy Story 4;Finding Dory;Brave;Incredibles 2;Monsters University;Cars 2;Cars 3;Inside Out 2`,
+50:`Soul;Luca;Turning Red;Elemental;Onward;Lightyear;Elio`,
+85:`Hoppers`,
+100:`The Good Dinosaur`},
+n:"Released in 2015 after Pixar replaced the director and rebuilt the story mid-production."},
+
+{c:"Sport",q:"Name an NFL team",t:{
+10:`Dallas Cowboys/Cowboys/Dallas;New England Patriots/Patriots/Pats/New England;Green Bay Packers/Packers/Green Bay;Kansas City Chiefs/Chiefs/Kansas City;Pittsburgh Steelers/Steelers/Pittsburgh;San Francisco 49ers/49ers/Niners/Forty Niners/San Francisco`,
+25:`Philadelphia Eagles/Eagles/Philadelphia;New York Giants/Giants;Chicago Bears/Bears/Chicago;Denver Broncos/Broncos/Denver;Las Vegas Raiders/Raiders/Oakland Raiders/Las Vegas;Seattle Seahawks/Seahawks/Seattle;Miami Dolphins/Dolphins/Miami;Baltimore Ravens/Ravens/Baltimore;Buffalo Bills/Bills/Buffalo;Los Angeles Rams/Rams;New Orleans Saints/Saints/New Orleans;Minnesota Vikings/Vikings/Minnesota;Tampa Bay Buccaneers/Buccaneers/Bucs/Tampa Bay;Detroit Lions/Lions/Detroit`,
+50:`Indianapolis Colts/Colts/Indianapolis;Los Angeles Chargers/Chargers;Cincinnati Bengals/Bengals/Cincinnati;Cleveland Browns/Browns/Cleveland;Atlanta Falcons/Falcons/Atlanta;Carolina Panthers/Panthers/Carolina;Arizona Cardinals/Cardinals/Arizona;New York Jets/Jets`,
+85:`Tennessee Titans/Titans/Tennessee;Houston Texans/Texans/Houston;Washington Commanders/Commanders/Washington`,
+100:`Jacksonville Jaguars/Jaguars/Jags/Jacksonville`},
+n:"Founded in 1995. The Jaguars have never reached a Super Bowl."},
+
+{c:"Sport",q:"Name an NBA team",t:{
+10:`Los Angeles Lakers/Lakers;Boston Celtics/Celtics/Boston;Chicago Bulls/Bulls;Golden State Warriors/Warriors/Golden State;Miami Heat/Heat;New York Knicks/Knicks`,
+25:`San Antonio Spurs/Spurs/San Antonio;Cleveland Cavaliers/Cavaliers/Cavs;Dallas Mavericks/Mavericks/Mavs;Brooklyn Nets/Nets/Brooklyn;Philadelphia 76ers/76ers/Sixers;Phoenix Suns/Suns/Phoenix;Houston Rockets/Rockets;Milwaukee Bucks/Bucks/Milwaukee;Denver Nuggets/Nuggets;Los Angeles Clippers/Clippers;Oklahoma City Thunder/Thunder/OKC;Toronto Raptors/Raptors/Toronto`,
+50:`Detroit Pistons/Pistons;Utah Jazz/Jazz/Utah;Portland Trail Blazers/Trail Blazers/Blazers/Portland;Sacramento Kings/Kings/Sacramento;Minnesota Timberwolves/Timberwolves/Wolves;Indiana Pacers/Pacers/Indiana;Atlanta Hawks/Hawks;Orlando Magic/Magic/Orlando;Memphis Grizzlies/Grizzlies/Memphis;Washington Wizards/Wizards`,
+85:`New Orleans Pelicans/Pelicans`,
+100:`Charlotte Hornets/Hornets/Charlotte`},
+n:null},
+
+{c:"Body",q:"Name a bone in the human body",t:{
+10:`Skull/Cranium;Femur/Thigh bone;Rib/Ribs;Vertebra/Vertebrae/Spine/Backbone;Pelvis`,
+25:`Tibia/Shinbone;Fibula;Humerus;Radius;Ulna;Patella/Kneecap;Clavicle/Collarbone;Sternum/Breastbone;Scapula/Shoulder blade;Mandible/Jaw/Jawbone;Coccyx/Tailbone;Hip bone/Hip`,
+50:`Metacarpals/Metacarpal;Metatarsals/Metatarsal;Phalanges/Phalanx;Carpals/Carpal/Wrist bones;Tarsals/Tarsal;Sacrum;Ilium;Ischium;Pubis/Pubic bone;Maxilla;Zygomatic/Cheekbone;Nasal bone;Frontal bone/Frontal;Parietal bone/Parietal;Occipital bone/Occipital;Temporal bone/Temporal;Atlas;Axis;Calcaneus/Heel bone;Talus/Ankle bone`,
+85:`Hyoid;Stapes/Stirrup;Incus/Anvil;Malleus/Hammer;Sphenoid;Ethmoid;Vomer;Lacrimal;Palatine;Scaphoid;Lunate;Triquetrum;Trapezium;Trapezoid;Capitate;Hamate;Cuboid;Navicular;Cuneiform;Sesamoid`,
+100:`Pisiform`},
+n:"A pea-sized wrist bone you can feel at the base of your palm, below the little finger."},
+
+{c:"Nature",q:"Name a dinosaur",t:{
+10:`Tyrannosaurus/T. rex/T rex/Tyrannosaurus rex;Triceratops;Velociraptor/Raptor;Stegosaurus;Brachiosaurus`,
+25:`Diplodocus;Spinosaurus;Ankylosaurus;Allosaurus;Parasaurolophus;Iguanodon;Apatosaurus;Brontosaurus;Dilophosaurus;Pachycephalosaurus;Gallimimus;Compsognathus`,
+50:`Giganotosaurus;Carnotaurus;Argentinosaurus;Therizinosaurus;Deinonychus;Utahraptor;Baryonyx;Oviraptor;Protoceratops;Styracosaurus;Microraptor;Archaeopteryx;Ceratosaurus;Maiasaura;Edmontosaurus;Corythosaurus;Kentrosaurus;Troodon;Coelophysis;Plateosaurus;Mamenchisaurus;Albertosaurus;Gorgosaurus;Megalosaurus;Dreadnoughtus;Patagotitan;Suchomimus;Irritator`,
+85:`Nigersaurus;Mussaurus;Amargasaurus;Eoraptor;Herrerasaurus;Yutyrannus;Sinosauropteryx;Psittacosaurus;Borealopelta;Stygimoloch;Dracorex;Zuniceratops;Mononykus;Masiakasaurus`,
+100:`Minmi`},
+n:"An armored dinosaur from Australia, with one of the shortest dinosaur names."},
+
+{c:"Ocean",q:"Name a species of shark",t:{
+10:`Great white shark/Great white/White shark;Hammerhead/Hammerhead shark;Whale shark;Tiger shark;Bull shark`,
+25:`Mako shark/Mako/Shortfin mako;Nurse shark;Basking shark;Blue shark;Lemon shark;Megalodon;Blacktip shark/Blacktip/Blacktip reef shark;Thresher shark/Thresher`,
+50:`Goblin shark;Greenland shark;Oceanic whitetip/Oceanic whitetip shark;Sand tiger shark/Sand tiger;Angel shark;Wobbegong;Zebra shark;Leopard shark;Dogfish/Spiny dogfish;Megamouth shark/Megamouth;Frilled shark;Bonnethead;Cookiecutter shark/Cookiecutter;Silky shark;Horn shark;Whitetip reef shark;Grey reef shark/Gray reef shark;Porbeagle;Salmon shark;Sevengill shark/Broadnose sevengill;Sixgill shark/Bluntnose sixgill;Catshark;Epaulette shark`,
+85:`Lanternshark/Lantern shark;Pocket shark;Sleeper shark;Swell shark;Bamboo shark;Crocodile shark;Sawshark;Dusky shark;Galapagos shark;Sandbar shark;Spinner shark;School shark/Tope;Smoothhound;Carpet shark;Pyjama shark/Pajama shark;Longfin mako;Velvet belly lanternshark`,
+100:`Ninja lanternshark`},
+n:"Described in 2015 from deep water off Central America. Jet black, and it may glow faintly."},
+
+{c:"Ocean",q:"Name a sea creature with no backbone",t:{
+10:`Jellyfish;Octopus;Squid;Crab;Lobster;Starfish/Sea star;Shrimp/Prawn`,
+25:`Sea urchin/Urchin;Sea cucumber;Clam;Oyster;Mussel;Scallop;Coral;Sea anemone/Anemone;Krill;Sponge/Sea sponge;Sea snail;Barnacle;Nautilus;Cuttlefish;Hermit crab;Sand dollar`,
+50:`Portuguese man o' war/Man o' war/Man of war;Sea slug;Nudibranch;Conch;Abalone;Sea pen;Comb jelly/Ctenophore;Brittle star;Giant isopod/Isopod;Sea spider;Sea butterfly/Pteropod;Salp;Sea squirt/Tunicate;Copepod;Limpet;Whelk;Mantis shrimp;Horseshoe crab;Japanese spider crab/Spider crab;Sea lily/Crinoid;Box jellyfish;Lion's mane jellyfish;Vampire squid;Giant squid;Colossal squid;Blue-ringed octopus;Dumbo octopus`,
+85:`Pyrosome;Siphonophore;Chiton;Sea hare;Feather duster worm/Feather duster;Christmas tree worm;Bobbit worm;Pompeii worm;Yeti crab;Sea angel;Amphipod;Ostracod;Bryozoan;Hydroid;Sea gooseberry;Glass sponge;Giant tube worm/Tube worm;Flatworm/Marine flatworm`,
+100:`Larvacean`},
+n:"A tiny drifter that builds a mucus 'house' to filter food, then abandons it several times a day."},
+
+{c:"Food",q:"Name a fruit",t:{
+10:`Apple;Banana;Orange;Strawberry;Grape;Mango;Pineapple;Watermelon`,
+25:`Pear;Peach;Cherry;Kiwi/Kiwifruit;Lemon;Lime;Blueberry;Raspberry;Plum;Coconut;Grapefruit;Papaya;Pomegranate;Cantaloupe;Apricot;Avocado;Tomato;Blackberry;Fig;Nectarine;Tangerine;Clementine;Cranberry;Melon;Honeydew;Date;Passion fruit;Olive`,
+50:`Guava;Lychee/Litchi;Dragon fruit/Pitaya/Pitahaya;Persimmon;Quince;Gooseberry;Kumquat;Starfruit/Carambola;Jackfruit;Durian;Mulberry;Elderberry;Blackcurrant/Currant/Redcurrant;Boysenberry;Plantain;Mandarin;Tamarind;Loquat;Rambutan;Mangosteen;Feijoa;Yuzu;Cherimoya/Custard apple;Soursop/Guanabana;Physalis/Cape gooseberry/Goldenberry;Huckleberry;Lingonberry;Cloudberry;Açaí/Acai;Pawpaw;Kiwano/Horned melon;Ugli fruit;Pomelo;Sapote;Salak/Snake fruit;Longan`,
+85:`Jabuticaba;Miracle fruit/Miracle berry;Bilberry;Serviceberry/Saskatoon berry/Saskatoon;Langsat;Santol;Marula;Noni;Ackee;Breadfruit;Buddha's hand;Finger lime;Cupuaçu/Cupuacu;Naranjilla;Sea buckthorn;Chokeberry/Aronia;Surinam cherry/Pitanga`,
+100:`Medlar`},
+n:"Traditionally eaten only after 'bletting': left to soften until it is nearly rotten."},
+
+{c:"Food",q:"Name a vegetable",t:{
+10:`Carrot;Potato;Broccoli;Lettuce;Onion;Corn/Sweetcorn;Peas/Pea;Cucumber;Spinach;Tomato`,
+25:`Celery;Cabbage;Cauliflower;Bell pepper/Pepper/Capsicum;Green bean/Green beans/String bean;Garlic;Mushroom;Zucchini/Courgette;Eggplant/Aubergine;Sweet potato;Kale;Asparagus;Beet/Beetroot;Radish;Pumpkin;Squash;Brussels sprouts/Brussels sprout/Brussel sprouts;Artichoke;Leek;Turnip;Okra`,
+50:`Parsnip;Rutabaga/Swede;Bok choy/Pak choi;Swiss chard/Chard;Arugula/Rocket;Collard greens/Collards;Fennel;Kohlrabi;Endive;Radicchio;Watercress;Shallot;Scallion/Green onion/Spring onion;Jicama;Daikon;Butternut squash;Snow peas/Snow pea;Edamame;Celeriac/Celery root;Yam;Taro;Cassava/Yuca/Manioc;Bamboo shoots;Bean sprouts;Water chestnut;Napa cabbage;Broccolini;Rapini/Broccoli rabe;Mustard greens;Horseradish`,
+85:`Sunchoke/Jerusalem artichoke;Romanesco;Sorrel;Purslane;Fiddlehead/Fiddleheads;Chayote;Cardoon;Burdock;Lotus root;Samphire;Gai lan/Chinese broccoli;Mizuna;Tatsoi;Ramps;Nettle/Nettles;Oca;Malanga`,
+100:`Salsify`},
+n:"A long, skinny root nicknamed the 'oyster plant' because some say it tastes like oysters."},
+
+{c:"Food",q:"Name a cheese",t:{
+10:`Cheddar;Mozzarella;Parmesan/Parmigiano-Reggiano/Parmigiano;Swiss;American`,
+25:`Brie;Gouda;Feta;Provolone;Ricotta;Cream cheese;Cottage cheese;Blue cheese;Pepper jack;Monterey Jack/Jack;Colby;Camembert;Gruyère/Gruyere;Goat cheese/Chèvre;Havarti;Muenster/Munster;Manchego;Halloumi;Mascarpone;String cheese;Emmental/Emmentaler`,
+50:`Gorgonzola;Roquefort;Stilton;Pecorino/Pecorino Romano;Asiago;Burrata;Fontina;Edam;Paneer;Queso fresco;Cotija;Oaxaca;Jarlsberg;Raclette;Comté/Comte;Wensleydale;Red Leicester;Double Gloucester;Limburger;Port Salut;Boursin;Taleggio;Reblochon;Brillat-Savarin;Quark;Colby Jack`,
+85:`Époisses/Epoisses;Vacherin;Morbier;Livarot;Pont-l'Évêque/Pont l'Eveque;Caciocavallo;Scamorza;Idiazabal;Mahón/Mahon;Cabrales;Mimolette;Saint Agur;Cantal;Appenzeller;Tête de Moine/Tete de Moine;Stracchino;Robiola;Ossau-Iraty;Kefalotyri;Graviera;Mizithra`,
+100:`Casu marzu`},
+n:"A Sardinian sheep's cheese deliberately fermented by live insect larvae."},
+
+{c:"Food",q:"Name a pasta shape",t:{
+10:`Spaghetti;Penne;Macaroni;Lasagna/Lasagne;Fettuccine/Fettucine;Ravioli`,
+25:`Linguine;Rigatoni;Fusilli;Farfalle/Bow tie/Bowtie;Tortellini;Rotini;Orzo;Angel hair/Capellini;Ziti;Gnocchi;Shells/Conchiglie;Manicotti;Cannelloni;Tagliatelle;Vermicelli;Elbow/Elbows/Elbow macaroni`,
+50:`Orecchiette;Pappardelle;Bucatini;Ditalini;Cavatappi;Campanelle;Gemelli;Radiatori;Paccheri;Conchiglioni;Stelline;Acini di pepe;Rotelle/Wagon wheels;Tortelloni;Agnolotti;Cappelletti;Strozzapreti;Trofie;Casarecce;Mafalde/Mafaldine;Fregola;Bigoli;Pici;Garganelli;Lumache;Anelli;Tubetti;Cavatelli;Perciatelli`,
+85:`Corzetti;Lorighittas;Malloreddus;Busiate;Fileja;Scialatielli;Pizzoccheri;Quadrefiore;Creste di gallo;Strangozzi;Umbricelli;Testaroli;Sorprese`,
+100:`Su filindeu`},
+n:"'Threads of God': pulled by hand in Sardinia into hundreds of hair-thin strands. Only a few people know how."},
+
+{c:"Animals",q:"Name a dog breed",t:{
+10:`Labrador Retriever/Labrador/Lab;Golden Retriever;German Shepherd;Poodle;Bulldog;Beagle;Chihuahua;Pug`,
+25:`Siberian Husky/Husky;Dachshund;Boxer;Rottweiler;Yorkshire Terrier/Yorkie;Shih Tzu;Great Dane;Doberman/Doberman Pinscher;Corgi/Pembroke Welsh Corgi;Border Collie;French Bulldog/Frenchie;Pit Bull/Pitbull/American Pit Bull Terrier;Pomeranian;Chow Chow;Dalmatian;Saint Bernard/St Bernard;Cocker Spaniel;Maltese;Greyhound;Australian Shepherd/Aussie;Bernese Mountain Dog;Shiba Inu;Mastiff;Schnauzer;Jack Russell Terrier/Jack Russell;Bichon Frise;Cavalier King Charles Spaniel;Akita;Samoyed;Alaskan Malamute/Malamute`,
+50:`Weimaraner;Vizsla;Basset Hound;Bloodhound;Newfoundland;Whippet;Papillon;Pekingese;Lhasa Apso;West Highland Terrier/Westie;Scottish Terrier/Scottie;Bull Terrier;Staffordshire Bull Terrier/Staffy;Shar Pei;Basenji;Rhodesian Ridgeback;Irish Setter;Irish Wolfhound;Saluki;Afghan Hound;Borzoi;Great Pyrenees;Collie/Rough Collie;Shetland Sheepdog/Sheltie;Cane Corso;Keeshond;Airedale Terrier/Airedale;Havanese;Italian Greyhound;Boston Terrier;Springer Spaniel/English Springer Spaniel;German Shorthaired Pointer/Pointer;Chinese Crested;Belgian Malinois/Malinois;Dogue de Bordeaux;Leonberger;Old English Sheepdog;Bullmastiff;Miniature Pinscher/Min Pin;Cockapoo;Labradoodle;Goldendoodle`,
+85:`Komondor;Puli;Xoloitzcuintli/Xolo;Otterhound;Lagotto Romagnolo;Azawakh;Catahoula;Mudi;Kooikerhondje;Bergamasco;Thai Ridgeback;Sloughi;Peruvian Inca Orchid;Stabyhoun;Dandie Dinmont Terrier;Sealyham Terrier;Skye Terrier;Bedlington Terrier;Brussels Griffon;Affenpinscher;Schipperke;Pharaoh Hound;Ibizan Hound;Finnish Spitz;Tibetan Mastiff;Kuvasz;Briard;Beauceron;Chinook`,
+100:`Norwegian Lundehund/Lundehund`},
+n:"Bred to climb cliffs after puffins: six toes on each foot and a neck that bends back to touch its spine."},
+
+{c:"Music",q:"Name a musical instrument",t:{
+10:`Piano;Guitar;Drums;Violin;Flute;Trumpet;Saxophone`,
+25:`Cello;Clarinet;Harp;Trombone;Tuba;Ukulele;Banjo;Bass/Bass guitar/Double bass;Harmonica;Accordion;Xylophone;Organ;Oboe;French horn/Horn;Keyboard;Tambourine;Triangle;Viola;Recorder;Bagpipes;Synthesizer;Bongos;Cymbals;Mandolin;Bassoon;Piccolo`,
+50:`Sitar;Didgeridoo;Marimba;Glockenspiel;Timpani;Harpsichord;Castanets;Cowbell;Conga;Djembe;Steel drum/Steel pan;Kazoo;Ocarina;Pan flute/Panpipes;Theremin;Vibraphone;Lute;Lyre;Zither;Cornet;Flugelhorn;Euphonium;Sousaphone;Celesta;Bugle;Maracas;Tabla;Koto;Shamisen;Erhu;Bouzouki;Balalaika;Dulcimer;Melodica;Kalimba;Cajón/Cajon;English horn/Cor anglais;Contrabassoon;Gong`,
+85:`Hurdy-gurdy;Nyckelharpa;Oud;Kora;Guzheng;Pipa;Shakuhachi;Sarangi;Veena;Santoor;Duduk;Handpan/Hang drum;Bandoneón/Bandoneon;Mbira;Ondes Martenot;Sackbut;Crumhorn;Theorbo;Viola da gamba;Hardanger fiddle;Kantele;Charango;Berimbau;Waterphone;Glass harmonica`,
+100:`Serpent`},
+n:"A bass horn from the 1590s, carved from wood in an S-curve and covered in leather."},
+
+{c:"Sport",q:"Name a Summer Olympic sport (past, present, or LA 2028)",t:{
+10:`Swimming;Gymnastics;Athletics/Track and field/Track;Basketball;Football/Soccer`,
+25:`Tennis;Volleyball;Boxing;Diving;Cycling;Rowing;Wrestling;Fencing;Archery;Judo;Weightlifting;Table tennis/Ping pong;Badminton;Golf;Rugby/Rugby sevens;Water polo;Sailing;Triathlon;Beach volleyball;Skateboarding;Surfing;Taekwondo;Equestrian;Hockey/Field hockey;Handball;Baseball;Softball;Canoeing/Kayaking/Canoe;Shooting`,
+50:`Modern pentathlon;Artistic swimming/Synchronized swimming;Trampoline;Sport climbing/Climbing;Breaking/Breakdancing;BMX;Rhythmic gymnastics;Marathon swimming/Open water swimming;Canoe slalom;Mountain biking;Dressage;Show jumping;Eventing;Cricket;Lacrosse;Squash;Flag football`,
+85:`Tug of war;Polo;Croquet;Jeu de paume;Rope climbing;Motorboating/Powerboating;Basque pelota/Pelota;Rackets/Racquets`,
+100:`Live pigeon shooting`},
+n:"Contested once, at Paris 1900, with real birds released from traps. It was never held again."},
+
+{c:"History",q:"Name a US president",t:{
+10:`George Washington/Washington;Abraham Lincoln/Lincoln/Abe Lincoln;Barack Obama/Obama;Donald Trump/Trump;John F. Kennedy/Kennedy/JFK;Ronald Reagan/Reagan;Joe Biden/Biden`,
+25:`Thomas Jefferson/Jefferson;Franklin D. Roosevelt/FDR/Franklin Roosevelt/Roosevelt;Theodore Roosevelt/Teddy Roosevelt/Teddy;Richard Nixon/Nixon;Bill Clinton/Clinton;George W. Bush/George Bush/Bush;Jimmy Carter/Carter;Dwight D. Eisenhower/Eisenhower/Ike;Harry S. Truman/Truman/Harry Truman;John Adams/Adams;Lyndon B. Johnson/LBJ/Lyndon Johnson/Johnson;Gerald Ford/Ford;George H. W. Bush/George HW Bush/Bush Sr;Andrew Jackson/Jackson;Ulysses S. Grant/Grant`,
+50:`James Madison/Madison;James Monroe/Monroe;John Quincy Adams;Woodrow Wilson/Wilson;Herbert Hoover/Hoover;Calvin Coolidge/Coolidge;Warren G. Harding/Harding;William Howard Taft/Taft;William McKinley/McKinley;Grover Cleveland/Cleveland;James K. Polk/Polk;Martin Van Buren/Van Buren;Andrew Johnson;James A. Garfield/Garfield;William Henry Harrison/Harrison;Zachary Taylor/Taylor;James Buchanan/Buchanan`,
+85:`John Tyler/Tyler;Millard Fillmore/Fillmore;Rutherford B. Hayes/Hayes;Chester A. Arthur/Chester Arthur/Arthur;Benjamin Harrison`,
+100:`Franklin Pierce/Pierce`},
+n:"The 14th president, 1853 to 1857. His own party refused to renominate him."},
+
+{c:"Space",q:"Name a constellation",t:{
+10:`Orion;Ursa Major/Big Dipper/Great Bear;Ursa Minor/Little Dipper/Little Bear`,
+25:`Cassiopeia;Scorpius/Scorpio;Leo;Taurus;Gemini;Cancer;Virgo;Libra;Sagittarius;Capricornus/Capricorn;Aquarius;Pisces;Aries;Draco;Cygnus;Pegasus;Andromeda;Perseus;Hercules;Lyra;Crux/Southern Cross`,
+50:`Canis Major;Canis Minor;Cepheus;Boötes/Bootes;Aquila;Auriga;Centaurus;Corona Borealis;Hydra;Ophiuchus;Cetus;Eridanus;Lepus;Monoceros;Delphinus;Lupus;Ara;Carina;Vela;Puppis;Columba;Corvus;Crater;Sagitta;Serpens;Triangulum;Lynx;Camelopardalis;Coma Berenices;Canes Venatici;Leo Minor;Lacerta;Vulpecula;Equuleus;Phoenix;Pavo;Tucana;Grus;Dorado;Hydrus;Indus`,
+85:`Antlia;Caelum;Chamaeleon;Circinus;Fornax;Horologium;Microscopium;Musca;Norma;Octans;Pictor;Piscis Austrinus;Pyxis;Reticulum;Sculptor;Scutum;Sextans;Telescopium;Triangulum Australe;Volans;Apus;Corona Australis`,
+100:`Mensa`},
+n:"'The Table Mountain', the faintest of all 88 constellations."},
+
+{c:"Money",q:"Name a currency, current or historical",t:{
+10:`Dollar/US dollar;Euro;Pound/Pound sterling/British pound;Yen;Peso`,
+25:`Rupee;Yuan/Renminbi/RMB;Franc/Swiss franc;Ruble/Rouble;Won;Real;Rand;Krona;Krone;Lira;Dinar;Shekel/Sheqel;Baht;Rupiah;Ringgit;Dirham;Riyal/Rial;Bitcoin`,
+50:`Złoty/Zloty;Forint;Koruna;Lev;Leu;Hryvnia;Lari;Dram;Tenge;Som;Manat;Kip;Riel;Kyat;Taka;Afghani;Dong;Sol;Boliviano;Guaraní/Guarani;Colón/Colon;Córdoba/Cordoba;Lempira;Quetzal;Balboa;Gourde;Bolívar/Bolivar;Naira;Cedi;Shilling;Birr;Kwacha;Kwanza;Pula;Loti;Lilangeni;Metical;Dalasi;Leone;Ariary;Ouguiya;Nakfa;Paʻanga/Paanga;Tala;Vatu;Kina;Rufiyaa;Tögrög/Tugrik/Togrog;Pataca;Escudo;Denar;Convertible mark/Mark`,
+85:`Kuna;Peseta;Drachma;Deutsche Mark;Guilder;Florin;Ducat;Doubloon;Sestertius;Piastre/Piaster;Farthing;Groat`,
+100:`Ngultrum`},
+n:"Bhutan's currency, pegged one-to-one to the Indian rupee."},
+
+{c:"Games",q:"Name a board game",t:{
+10:`Monopoly;Chess;Scrabble;Checkers/Draughts;Clue/Cluedo;Risk;The Game of Life/Life/Game of Life`,
+25:`Sorry!;Trouble;Catan/Settlers of Catan;Battleship;Connect Four/Connect 4;Backgammon;Candy Land/Candyland;Snakes and Ladders/Chutes and Ladders;Mouse Trap;Operation;Stratego;Othello/Reversi;Pictionary;Trivial Pursuit;Guess Who?;Ticket to Ride;Pandemic;Go/Weiqi/Baduk;Mancala;Ludo/Parcheesi;Boggle;Taboo`,
+50:`Carcassonne;Azul;Codenames;Dominion;Wingspan;Splendor;7 Wonders/Seven Wonders;Puerto Rico;Agricola;Terraforming Mars;Gloomhaven;Twilight Imperium;Power Grid;King of Tokyo;Dixit;Small World;Betrayal at House on the Hill;Axis & Allies;Diplomacy;Acquire;Cranium;Balderdash;Hungry Hungry Hippos;Sequence;Rummikub;Blokus;Chinese Checkers;Mastermind;Shogi;Xiangqi/Chinese chess;Nine Men's Morris;Cribbage;Yahtzee`,
+85:`Brass: Birmingham/Brass Birmingham/Brass;Spirit Island;Root;Scythe;Everdell;Arkham Horror;War of the Ring;Through the Ages;Hive;Tigris & Euphrates;El Grande;Tzolk'in;Caylus;Le Havre;Gomoku;Hnefatafl;Senet`,
+100:`Royal Game of Ur/Game of Ur/Ur`},
+n:"Played in Mesopotamia about 4,500 years ago. Its rules were pieced back together from a cuneiform tablet."},
+
+{c:"Tech",q:"Name a programming language",t:{
+10:`Python;Java;JavaScript/JS;C;C++/CPP;C#/C Sharp`,
+25:`Ruby;PHP;Swift;Go/Golang;Rust;Kotlin;TypeScript/TS;SQL;R;Perl;MATLAB;Scala;Visual Basic/VB/VBA;Assembly/ASM;Bash/Shell;Objective-C/ObjC;Dart;Lua`,
+50:`Haskell;Lisp/Common Lisp;Fortran;COBOL;Pascal;Delphi;Erlang;Elixir;Clojure;F#/F Sharp;Julia;Groovy;Prolog;Scheme;BASIC;Ada;Smalltalk;OCaml;Zig;Nim;Crystal;Racket;PowerShell;Solidity;APL;Scratch;Logo;D;VB.NET`,
+85:`Brainf*ck/Brainfuck;Forth;Simula;ALGOL;J;K;Q;Befunge;Whitespace;LOLCODE;Chapel;Idris;Agda;Coq/Rocq;Elm;PureScript;Raku;Tcl;AWK;SNOBOL;PL-I/PL1;Rexx;Modula-2;Oberon;Eiffel;Hack;Vala;Odin;Carbon;Mojo;Gleam;Roc`,
+100:`Malbolge`},
+n:"Designed in 1998 to be as hard to program in as possible. The first working program took two years to appear."},
+
+{c:"Nature",q:"Name a gemstone",t:{
+10:`Diamond;Ruby;Emerald;Sapphire;Pearl`,
+25:`Amethyst;Topaz;Opal;Jade;Garnet;Aquamarine;Turquoise;Onyx;Quartz;Peridot;Citrine;Amber;Jasper`,
+50:`Tourmaline;Tanzanite;Lapis lazuli/Lapis;Moonstone;Alexandrite;Zircon;Spinel;Agate;Obsidian;Malachite;Bloodstone;Morganite;Tiger's eye/Tigers eye;Carnelian;Coral;Jet;Kunzite;Chrysoberyl;Iolite;Labradorite;Sunstone;Rose quartz;Smoky quartz;Beryl`,
+85:`Benitoite;Taaffeite;Grandidierite;Musgravite;Red beryl/Bixbite;Jeremejevite;Poudretteite;Serendibite;Demantoid;Tsavorite;Sphene/Titanite;Kyanite;Andalusite;Chrysoprase;Rhodochrosite;Larimar;Ammolite;Sugilite;Charoite;Hiddenite;Padparadscha`,
+100:`Painite`},
+n:"Once listed by Guinness as the rarest mineral on Earth: in the 1950s only one crystal was known."},
+
+{c:"Food",q:"Name a herb or spice",t:{
+10:`Black pepper/Pepper/Peppercorn;Basil;Cinnamon;Oregano;Garlic;Ginger;Paprika;Parsley`,
+25:`Rosemary;Thyme;Cumin;Nutmeg;Mint/Peppermint/Spearmint;Dill;Cilantro/Coriander;Turmeric;Chili powder/Chili/Chilli;Cayenne/Cayenne pepper;Sage;Bay leaf/Bay leaves/Bay;Cloves/Clove;Vanilla;Saffron;Mustard/Mustard seed;Chives;Allspice;Cardamom;Tarragon;Marjoram;Curry powder`,
+50:`Fennel seed/Fennel;Star anise;Anise/Aniseed;Fenugreek;Sumac;Za'atar;Garam masala;Five spice/Chinese five spice;Mace;Caraway;Celery seed;Lemongrass;Galangal;Juniper/Juniper berries;Smoked paprika;White pepper;Sichuan pepper/Szechuan pepper;Lavender;Chervil;Lovage;Savory;Horseradish;Wasabi;Sesame/Sesame seeds;Poppy seed/Poppy seeds;Nigella/Kalonji/Black seed;Asafoetida/Hing;Ajwain/Carom;Annatto/Achiote;Epazote;Makrut lime leaf/Kaffir lime leaf/Lime leaf;Curry leaf/Curry leaves;Pink peppercorn;Herbes de Provence;Ras el hanout;Berbere;Baharat;Dukkah`,
+85:`Long pepper;Amchur/Amchoor/Mango powder;Mahlab/Mahleb;Sansho;Cubeb;Borage;Hyssop;Rue;Angelica;Licorice root/Liquorice;Orris root;Filé powder/Sassafras;Black lime/Loomi;Kokum;Anardana;Shiso/Perilla;Culantro;Wattleseed;Mastic`,
+100:`Grains of paradise`},
+n:"A peppery West African seed, sold in medieval Europe as a pricey substitute for black pepper."},
+
+{c:"Art",q:"Name a famous painter",t:{
+10:`Pablo Picasso/Picasso;Vincent van Gogh/Van Gogh;Leonardo da Vinci/Da Vinci/Leonardo;Claude Monet/Monet;Michelangelo;Rembrandt`,
+25:`Salvador Dalí/Dali;Andy Warhol/Warhol;Frida Kahlo/Kahlo/Frida;Henri Matisse/Matisse;Pierre-Auguste Renoir/Renoir;Paul Cézanne/Cezanne;Raphael;Johannes Vermeer/Vermeer;Jackson Pollock/Pollock;Edvard Munch/Munch;Gustav Klimt/Klimt;Edgar Degas/Degas;Sandro Botticelli/Botticelli;Caravaggio;Francisco Goya/Goya;Georgia O'Keeffe/O'Keeffe;Edward Hopper/Hopper;Bob Ross;Banksy;Mark Rothko/Rothko;René Magritte/Magritte;Wassily Kandinsky/Kandinsky;Édouard Manet/Manet;Paul Gauguin/Gauguin;Georges Seurat/Seurat;Peter Paul Rubens/Rubens;El Greco;J. M. W. Turner/Turner;John Constable/Constable;Titian;Jean-Michel Basquiat/Basquiat;Keith Haring/Haring;Roy Lichtenstein/Lichtenstein;Norman Rockwell/Rockwell`,
+50:`Diego Velázquez/Velazquez;Albrecht Dürer/Durer;Hieronymus Bosch/Bosch;Pieter Bruegel/Bruegel/Brueghel;Hans Holbein/Holbein;Tintoretto;Giotto;Piet Mondrian/Mondrian;Joan Miró/Miro;Marc Chagall/Chagall;Paul Klee/Klee;Amedeo Modigliani/Modigliani;Henri de Toulouse-Lautrec/Toulouse-Lautrec;Camille Pissarro/Pissarro;Mary Cassatt/Cassatt;Berthe Morisot/Morisot;Winslow Homer/Homer;John Singer Sargent/Sargent;Andrew Wyeth/Wyeth;Willem de Kooning/De Kooning;David Hockney/Hockney;Francis Bacon/Bacon;Lucian Freud/Freud;Egon Schiele/Schiele;Katsushika Hokusai/Hokusai;Utagawa Hiroshige/Hiroshige;Diego Rivera/Rivera;Eugène Delacroix/Delacroix;Jean-Auguste-Dominique Ingres/Ingres;Gustave Courbet/Courbet;Jean-François Millet/Millet;Thomas Gainsborough/Gainsborough;William Blake/Blake;Dante Gabriel Rossetti/Rossetti;John William Waterhouse/Waterhouse;Kazimir Malevich/Malevich;Gerhard Richter/Richter;Yayoi Kusama/Kusama;Cy Twombly/Twombly;Robert Rauschenberg/Rauschenberg;Jasper Johns;Helen Frankenthaler/Frankenthaler;James McNeill Whistler/Whistler;Alfred Sisley/Sisley`,
+85:`Artemisia Gentileschi/Gentileschi;Hilma af Klint/af Klint;Élisabeth Vigée Le Brun/Vigee Le Brun;Gustave Caillebotte/Caillebotte;Joaquín Sorolla/Sorolla;Francisco de Zurbarán/Zurbaran;Georges de La Tour;Jean-Siméon Chardin/Chardin;Caspar David Friedrich/Friedrich;Vilhelm Hammershøi/Hammershoi;Félix Vallotton/Vallotton;Pierre Bonnard/Bonnard;Odilon Redon/Redon;James Ensor/Ensor;Ilya Repin/Repin`,
+100:`Ivan Aivazovsky/Aivazovsky`},
+n:"Painted around 6,000 works, nearly all of them the sea, mostly from memory."},
+
+{c:"Animals",q:"Name a bird that can't fly",t:{
+10:`Penguin;Ostrich;Emu;Kiwi;Dodo`,
+25:`Cassowary;Rhea;Kakapo/Kākāpō;Emperor penguin;King penguin`,
+50:`Takahē/Takahe;Weka;Flightless cormorant/Galápagos cormorant;Great auk;Moa;Elephant bird;Inaccessible Island rail;Adélie penguin/Adelie penguin;Gentoo penguin;Chinstrap penguin;Rockhopper penguin;Macaroni penguin;Little penguin/Fairy penguin/Little blue penguin;African penguin;Humboldt penguin;Magellanic penguin;Galápagos penguin/Galapagos penguin;Yellow-eyed penguin;Steamer duck`,
+85:`Terror bird/Phorusrhacid;Titanis;Auckland teal/Auckland Islands teal;Campbell teal;Lord Howe woodhen;Kagu;Aptornis;Dromornis;Gastornis;Okinawa rail`,
+100:`Rodrigues solitaire/Solitaire`},
+n:"A turkey-sized relative of the dodo from Rodrigues island, extinct by the 1760s."},
+
+{c:"Weather",q:"Name a type of cloud",t:{
+10:`Cumulus;Stratus;Cirrus;Cumulonimbus/Thunderhead`,
+25:`Nimbostratus;Altostratus;Altocumulus;Cirrostratus;Cirrocumulus;Stratocumulus;Nimbus;Fog;Contrail`,
+50:`Mammatus;Lenticular;Shelf cloud/Arcus;Wall cloud;Noctilucent;Nacreous/Polar stratospheric;Pileus;Castellanus;Fractus;Roll cloud;Funnel cloud;Pyrocumulus;Kelvin-Helmholtz/Fluctus;Asperitas;Cumulus congestus/Congestus;Anvil/Incus;Virga`,
+85:`Morning Glory;Undulatus;Velum;Pannus;Tuba;Murus;Cauda;Flammagenitus;Homogenitus;Cataractagenitus;Volutus;Fallstreak hole/Hole punch cloud/Cavum`,
+100:`Silvagenitus`},
+n:"A cloud made from moisture breathed out by forests. Officially named by the World Meteorological Organization in 2017."},
+
+{c:"Books",q:"Name a Harry Potter character",t:{
+10:`Harry Potter/Harry;Hermione Granger/Hermione;Ron Weasley/Ron;Albus Dumbledore/Dumbledore;Lord Voldemort/Voldemort/Tom Riddle/You-Know-Who;Severus Snape/Snape;Rubeus Hagrid/Hagrid;Draco Malfoy/Draco/Malfoy`,
+25:`Ginny Weasley/Ginny;Fred Weasley/Fred;George Weasley/George;Neville Longbottom/Neville;Luna Lovegood/Luna;Sirius Black/Sirius;Remus Lupin/Lupin;Minerva McGonagall/McGonagall;Dobby;Bellatrix Lestrange/Bellatrix;Lucius Malfoy/Lucius;Cedric Diggory/Cedric;Cho Chang;Dudley Dursley/Dudley;Vernon Dursley/Uncle Vernon;Petunia Dursley/Aunt Petunia;Molly Weasley/Mrs Weasley;Arthur Weasley/Mr Weasley;Percy Weasley/Percy;Dolores Umbridge/Umbridge;Mad-Eye Moody/Alastor Moody/Moody;Peter Pettigrew/Wormtail;Hedwig;Gilderoy Lockhart/Lockhart;Quirinus Quirrell/Quirrell;Nymphadora Tonks/Tonks;Fawkes;Kreacher;Nagini;Buckbeak;Crookshanks;Scabbers;Fluffy;Aragog;Horace Slughorn/Slughorn;Gellert Grindelwald/Grindelwald;Fleur Delacour/Fleur;Viktor Krum/Krum;James Potter;Lily Potter;Argus Filch/Filch;Moaning Myrtle/Myrtle;Bill Weasley/Bill;Charlie Weasley/Charlie;Sybill Trelawney/Trelawney`,
+50:`Mrs Norris;Peeves;Nearly Headless Nick/Sir Nicholas;Seamus Finnigan/Seamus;Dean Thomas;Lavender Brown;Vincent Crabbe/Crabbe;Gregory Goyle/Goyle;Pansy Parkinson/Pansy;Pomona Sprout/Professor Sprout/Sprout;Filius Flitwick/Flitwick;Kingsley Shacklebolt/Kingsley;Cornelius Fudge/Fudge;Rufus Scrimgeour/Scrimgeour;Griphook;Garrick Ollivander/Ollivander;Aberforth Dumbledore/Aberforth;Rita Skeeter;Barty Crouch/Barty Crouch Jr/Bartemius Crouch;Winky;Xenophilius Lovegood/Xenophilius;Oliver Wood;Colin Creevey;Madam Pomfrey/Poppy Pomfrey;Madam Hooch/Rolanda Hooch;Firenze;Grawp;Fenrir Greyback/Greyback;Regulus Black/Regulus;Narcissa Malfoy/Narcissa;Mundungus Fletcher/Mundungus;Arabella Figg/Mrs Figg;Cormac McLaggen;Ernie Macmillan;Hannah Abbott;Katie Bell;Angelina Johnson;Lee Jordan;Blaise Zabini;Scorpius Malfoy;Albus Severus Potter;Teddy Lupin;Andromeda Tonks;Ariana Dumbledore;Bathilda Bagshot;Professor Binns/Binns;Madam Pince/Irma Pince;Stan Shunpike`,
+85:`Merope Gaunt;Morfin Gaunt;Marvolo Gaunt;Hepzibah Smith;Amycus Carrow;Alecto Carrow;Antonin Dolohov/Dolohov;Augustus Rookwood/Rookwood;Corban Yaxley/Yaxley;Rabastan Lestrange;Rodolphus Lestrange;Phineas Nigellus Black/Phineas Nigellus;Walburga Black;Bogrod;Kendra Dumbledore;Mafalda Hopkirk;Elphias Doge;Amelia Bones;Susan Bones;Gregorovitch;Ignotus Peverell;Justin Finch-Fletchley;Zacharias Smith;Dennis Creevey;Romilda Vane;Marcus Flint;Theodore Nott;Millicent Bulstrode;Dedalus Diggle;Ted Tonks;Dirk Cresswell`,
+100:`Ernie Prang`},
+n:"The elderly, thick-spectacled driver of the Knight Bus."},
+
+{c:"Music",q:"Name a Beatles song",t:{
+10:`Hey Jude;Yesterday;Let It Be;Here Comes the Sun;Yellow Submarine;All You Need Is Love;Twist and Shout;Help!`,
+25:`Come Together;Something;Eleanor Rigby;I Want to Hold Your Hand;Strawberry Fields Forever/Strawberry Fields;Penny Lane;A Day in the Life;Blackbird;In My Life;Love Me Do;She Loves You;A Hard Day's Night;Ticket to Ride;Lucy in the Sky with Diamonds;Hello, Goodbye;Get Back;Revolution;Ob-La-Di, Ob-La-Da/Obladi Oblada;I Saw Her Standing There;While My Guitar Gently Weeps;Can't Buy Me Love;All My Loving;Eight Days a Week;Norwegian Wood;With a Little Help from My Friends;Sgt. Pepper's Lonely Hearts Club Band/Sgt Pepper;The Long and Winding Road;Across the Universe;I Am the Walrus;Drive My Car;Nowhere Man;Paperback Writer;Day Tripper;We Can Work It Out;Back in the U.S.S.R./Back in the USSR;Helter Skelter;Michelle;Here, There and Everywhere;Now and Then`,
+50:`Octopus's Garden/Octopuses Garden;Dear Prudence;Golden Slumbers;Carry That Weight;The End;I Feel Fine;Please Please Me;From Me to You;All Together Now;Magical Mystery Tour;Got to Get You into My Life;Taxman;Tomorrow Never Knows;Rain;Julia;Girl;If I Fell;And I Love Her;You've Got to Hide Your Love Away;Good Day Sunshine;I Want You (She's So Heavy)/I Want You;Maxwell's Silver Hammer;Oh! Darling;Because;Sun King;Mean Mr. Mustard;Polythene Pam;She Came In Through the Bathroom Window;Two of Us;Don't Let Me Down;The Ballad of John and Yoko;Hey Bulldog;Birthday;Rocky Raccoon;Glass Onion;When I'm Sixty-Four/When I'm 64;Being for the Benefit of Mr. Kite!/Mr Kite;Getting Better;Fixing a Hole;She's Leaving Home;Lovely Rita;Free as a Bird;Real Love;I'm Only Sleeping;Things We Said Today;No Reply;I'll Follow the Sun;Run for Your Life;Think for Yourself;You Won't See Me;I'm Looking Through You;For No One;Doctor Robert;And Your Bird Can Sing;She Said She Said;Within You Without You;Good Morning Good Morning;Martha My Dear;Sexy Sadie;Happiness Is a Warm Gun;Mother Nature's Son;Baby, You're a Rich Man;The Continuing Story of Bungalow Bill/Bungalow Bill`,
+85:`Revolution 9;Piggies;Savoy Truffle;Honey Pie;Cry Baby Cry;Good Night;Yer Blues;I Will;Long, Long, Long;Dig a Pony;I've Got a Feeling;One After 909;For You Blue;I Me Mine;Old Brown Shoe;Only a Northern Song;It's All Too Much;Her Majesty;The Word;Wait;What Goes On;Love You To;Dig It;Maggie Mae;Why Don't We Do It in the Road?;Everybody's Got Something to Hide Except Me and My Monkey;Flying;Blue Jay Way;Your Mother Should Know;Not a Second Time;Hold Me Tight;Little Child;Don't Bother Me;Tell Me Why;I'll Cry Instead;Every Little Thing;Another Girl;You Like Me Too Much;Tell Me What You See;Yes It Is;You Know My Name (Look Up the Number)/You Know My Name;The Inner Light`,
+100:`Wild Honey Pie`},
+n:"53 seconds long, recorded by Paul McCartney alone for the White Album."},
+
+{c:"Film",q:"Name a Walt Disney Animation Studios film",t:{
+10:`The Lion King;Frozen;Aladdin;The Little Mermaid;Beauty and the Beast;Snow White and the Seven Dwarfs/Snow White;Cinderella`,
+25:`Moana;Tangled;Mulan;Bambi;Dumbo;Pinocchio;Fantasia;Peter Pan;Sleeping Beauty;Lady and the Tramp;One Hundred and One Dalmatians/101 Dalmatians;The Jungle Book;Pocahontas;Hercules;Tarzan;Lilo & Stitch;Zootopia/Zootropolis;Frozen II/Frozen 2;Encanto;Wreck-It Ralph;Big Hero 6;The Princess and the Frog;Alice in Wonderland;The Aristocats;Robin Hood;The Hunchback of Notre Dame;Bolt;Wish;Raya and the Last Dragon;Moana 2;Zootopia 2`,
+50:`The Fox and the Hound;The Rescuers;The Rescuers Down Under;Oliver & Company;The Great Mouse Detective;The Emperor's New Groove;Atlantis: The Lost Empire/Atlantis;Treasure Planet;Brother Bear;Home on the Range;Chicken Little;Meet the Robinsons;Winnie the Pooh;The Many Adventures of Winnie the Pooh;The Sword in the Stone;The Black Cauldron;Ralph Breaks the Internet;Strange World;Fantasia 2000;Dinosaur;Saludos Amigos;The Three Caballeros`,
+85:`Make Mine Music;Fun and Fancy Free;The Adventures of Ichabod and Mr. Toad/Ichabod and Mr Toad`,
+100:`Melody Time`},
+n:"A 1948 package film of seven musical shorts, including Johnny Appleseed and Pecos Bill."},
+
+{c:"Geography",q:"Name a country that borders China",t:{
+10:`India;Russia;North Korea;Mongolia`,
+25:`Vietnam;Pakistan;Nepal;Afghanistan;Kazakhstan;Myanmar/Burma;Laos`,
+50:`Bhutan`,
+85:`Kyrgyzstan`,
+100:`Tajikistan`},
+n:"China shares borders with 14 countries, tied with Russia for the most of any nation."},
+
+{c:"Film",q:"Name an actor who played James Bond (1954–2021)",t:{
+10:`Sean Connery/Connery;Daniel Craig/Craig;Pierce Brosnan/Brosnan;Roger Moore/Moore`,
+25:`Timothy Dalton/Dalton`,
+50:`George Lazenby/Lazenby`,
+85:`David Niven/Niven`,
+100:`Barry Nelson/Nelson`},
+n:"The first screen Bond: an American 'Jimmy Bond' in a live 1954 TV version of Casino Royale."},
+
+{c:"History",q:"Name one of the Seven Wonders, ancient or new",t:{
+10:`Great Wall of China/Great Wall;Great Pyramid of Giza/Pyramids of Giza/Great Pyramid/Pyramids/Pyramid;Taj Mahal;Colosseum/Coliseum`,
+25:`Machu Picchu;Christ the Redeemer;Petra;Chichén Itzá/Chichen Itza;Hanging Gardens of Babylon/Hanging Gardens;Colossus of Rhodes/Colossus`,
+50:`Lighthouse of Alexandria/Pharos of Alexandria/Pharos;Statue of Zeus at Olympia/Statue of Zeus`,
+85:`Temple of Artemis at Ephesus/Temple of Artemis`,
+100:`Mausoleum at Halicarnassus/Mausoleum of Halicarnassus/Mausoleum`},
+n:"The tomb of King Mausolus, so grand that every 'mausoleum' since is named after it."},
+
+{c:"Ocean",q:"Name a part of a ship or boat",t:{
+10:`Anchor;Sail;Deck;Hull;Mast;Rudder`,
+25:`Bow;Stern;Keel;Port;Starboard;Cabin;Bridge;Propeller/Screw;Galley;Crow's nest;Helm;Porthole;Ship's wheel/Wheel;Oar;Lifeboat;Gangplank/Gangway;Hatch;Bilge;Bulkhead;Boom;Rigging;Hold/Cargo hold;Engine room;Cockpit`,
+50:`Bowsprit;Transom;Gunwale;Forecastle/Fo'c'sle;Poop deck;Quarterdeck;Figurehead;Capstan;Windlass;Ballast;Berth;Brig;Davit;Hawsehole;Scupper;Cleat;Bollard;Tiller;Centerboard/Daggerboard;Jib;Spinnaker;Mainsail;Halyard;Sheet;Shroud;Stay;Yardarm/Yard;Spar;Binnacle;Mess;Head;Stanchion;Fender;Bulwark;Waterline;Plimsoll line/Load line;Crosstrees;Chart room`,
+85:`Bitt;Hawsepipe;Chine;Strake;Garboard;Deadeye;Ratline/Ratlines;Cathead;Taffrail;Orlop deck/Orlop;Sponson;Lazarette;Chain locker;Skeg;Bilge keel;Bulbous bow;Bow thruster/Thruster;Fairlead;Gudgeon;Pintle;Spurling pipe`,
+100:`Futtock`},
+n:"One of the curved timbers that make up a wooden ship's ribs."},
+
+{c:"Geography",q:"Name a country that starts with S",t:{
+10:`Spain;Sweden;Switzerland;South Africa;South Korea;Saudi Arabia`,
+25:`Singapore;Sri Lanka;Sudan;Syria;Somalia;Senegal;Serbia;Slovakia;Slovenia;South Sudan`,
+50:`Sierra Leone;Suriname;San Marino;Seychelles;Scotland;Samoa;Solomon Islands`,
+85:`Saint Lucia/St Lucia;Saint Kitts and Nevis/St Kitts and Nevis/St Kitts;Saint Vincent and the Grenadines/St Vincent;Swaziland`,
+100:`São Tomé and Príncipe/Sao Tome and Principe/Sao Tome`},
+n:"Africa's second-smallest country: two volcanic islands sitting almost on the equator."},
+
+{c:"Ocean",q:"Name a kind of whale, dolphin or porpoise",t:{
+10:`Blue whale;Orca/Killer whale;Humpback whale/Humpback;Bottlenose dolphin;Beluga/Beluga whale`,
+25:`Sperm whale;Narwhal;Gray whale/Grey whale;Minke whale/Minke;Fin whale/Finback;Right whale;Bowhead whale/Bowhead;Pilot whale;Spinner dolphin;Harbor porpoise/Harbour porpoise/Porpoise`,
+50:`Sei whale;Bryde's whale;Cuvier's beaked whale/Beaked whale;Risso's dolphin;Dusky dolphin;Common dolphin;Striped dolphin;Spotted dolphin;Amazon river dolphin/Boto/Pink river dolphin/River dolphin;Vaquita;False killer whale;Melon-headed whale;Pygmy sperm whale;Dwarf sperm whale;Hector's dolphin;Commerson's dolphin;Irrawaddy dolphin;Pacific white-sided dolphin/White-sided dolphin;Rough-toothed dolphin;Dall's porpoise;Baiji/Yangtze river dolphin;Northern bottlenose whale`,
+85:`Omura's whale;Pygmy right whale;Baird's beaked whale;Sowerby's beaked whale;Strap-toothed whale;Tucuxi;Franciscana;Finless porpoise;Burmeister's porpoise;Spectacled porpoise;Fraser's dolphin;Clymene dolphin;Heaviside's dolphin;Chilean dolphin;Hourglass dolphin;Peale's dolphin;Atlantic humpback dolphin`,
+100:`Spade-toothed whale/Spade-toothed beaked whale`},
+n:"The rarest whale known. Never seen alive: identified from a few bones and two bodies that washed ashore."},
+
+{c:"Food",q:"Name a fish people eat",t:{
+10:`Salmon;Tuna;Cod;Tilapia;Trout;Catfish`,
+25:`Halibut;Mackerel;Sardine/Sardines;Anchovy/Anchovies;Swordfish;Mahi-mahi/Dorado;Snapper/Red snapper;Sea bass;Haddock;Herring;Flounder;Sole;Pollock/Pollack;Bass;Carp;Perch;Grouper;Eel`,
+50:`Monkfish;Branzino/European sea bass;Mullet;Pike;Walleye;Arctic char/Char;Sturgeon;Turbot;Plaice;Whiting;Hake;John Dory;Barramundi;Cobia;Wahoo;Yellowtail/Hamachi;Skate;Sablefish/Black cod;Orange roughy;Opah;Pompano;Shad;Smelt;Sprat/Sprats;Bonito;Amberjack;Tilefish;Rockfish;Lingcod;Kingfish;Milkfish;Swai/Basa/Pangasius;Sea bream/Bream;Lionfish`,
+85:`Fugu/Pufferfish/Puffer fish;Lamprey;Gar;Pickerel;Burbot;Snoek;Hilsa;Rohu;Pomfret;Wolffish;Cusk;Scup;Croaker;Red drum/Redfish/Drum;Sheepshead;Triggerfish;Parrotfish`,
+100:`Bombay duck`},
+n:"Not a duck at all: a lizardfish, often dried and fried in India."}
+];
+
+/* Quiz: [category, difficulty 1-3, question, correct, wrong, wrong, wrong] */
+const QUIZ=[
+["Geography",1,"What is the capital of Australia?","Canberra","Sydney","Melbourne","Perth"],
+["Geography",2,"Which river flows through Baghdad?","Tigris","Euphrates","Jordan","Nile"],
+["Geography",1,"What is the longest river in South America?","Amazon","Paraná","Orinoco","Magdalena"],
+["Geography",2,"Which country has the most natural lakes?","Canada","Russia","Finland","United States"],
+["Geography",1,"What is the capital of Canada?","Ottawa","Toronto","Montreal","Vancouver"],
+["Geography",1,"What is the smallest country in the world by area?","Vatican City","Monaco","San Marino","Liechtenstein"],
+["Geography",1,"What is the largest hot desert on Earth?","Sahara","Arabian","Gobi","Kalahari"],
+["Geography",2,"Mount Kilimanjaro is in which country?","Tanzania","Kenya","Uganda","Ethiopia"],
+["Geography",2,"Which US state has the longest coastline?","Alaska","Florida","California","Hawaii"],
+["Geography",3,"What is the capital of Mongolia?","Ulaanbaatar","Astana","Bishkek","Tashkent"],
+["Geography",1,"Which strait separates Europe from Africa?","Strait of Gibraltar","Bosporus","Strait of Messina","Strait of Hormuz"],
+["Geography",2,"What is the deepest lake in the world?","Lake Baikal","Lake Tanganyika","Lake Superior","Caspian Sea"],
+["Geography",3,"Counting its overseas territories, which country spans the most time zones?","France","Russia","United States","United Kingdom"],
+["Geography",2,"Which African country was once known as Abyssinia?","Ethiopia","Eritrea","Somalia","Sudan"],
+["Geography",1,"What is the capital of New Zealand?","Wellington","Auckland","Christchurch","Queenstown"],
+["Geography",3,"Which country has the most pyramids?","Sudan","Egypt","Mexico","Peru"],
+["Ocean",1,"What is the deepest known point in the ocean?","Challenger Deep","Tonga Trench","Java Trench","Kermadec Trench"],
+["Ocean",1,"What is the largest ocean?","Pacific","Atlantic","Indian","Southern"],
+["Ocean",1,"What is the largest animal known to have ever lived?","Blue whale","Megalodon","Argentinosaurus","Whale shark"],
+["Ocean",2,"How many hearts does an octopus have?","Three","One","Two","Eight"],
+["Ocean",2,"What is the largest fish in the sea?","Whale shark","Basking shark","Great white shark","Ocean sunfish"],
+["Ocean",3,"What makes a deep-sea anglerfish's lure glow?","Bioluminescent bacteria","Phosphorus crystals","An electric organ","Reflected moonlight"],
+["Ocean",2,"Which sea has no coastline?","Sargasso Sea","Dead Sea","Coral Sea","Sea of Japan"],
+["Ocean",2,"The Great Barrier Reef lies off which Australian state?","Queensland","New South Wales","Western Australia","Northern Territory"],
+["Ocean",1,"Krill are a type of what?","Crustacean","Mollusk","Fish","Jellyfish"],
+["Ocean",1,"About how much of Earth's surface is covered by ocean?","71%","51%","61%","81%"],
+["Ocean",1,"In what year did the Titanic sink?","1912","1905","1915","1921"],
+["Ocean",2,"Which ocean layer begins around 1,000 m, where no sunlight reaches?","Midnight zone","Twilight zone","Sunlight zone","Hadal zone"],
+["Ocean",1,"In seahorses, which parent carries the eggs until they hatch?","The father","The mother","Both take turns","Neither; the eggs drift"],
+["Ocean",3,"Cuvier's beaked whale holds the mammal dive record. Roughly how deep?","About 3,000 m","About 500 m","About 1,000 m","About 6,000 m"],
+["Ocean",1,"What mainly causes ocean tides?","The Moon's gravity","Wind","Earth's magnetic field","Ocean currents"],
+["Ocean",2,"Roughly how deep is Challenger Deep?","About 11,000 m","About 5,000 m","About 8,800 m","About 15,000 m"],
+["Ocean",3,"In what year did humans first reach the bottom of Challenger Deep?","1960","1951","1972","1989"],
+["Ocean",3,"Who made the first solo dive to Challenger Deep, in 2012?","James Cameron","Victor Vescovo","Jacques Piccard","Robert Ballard"],
+["Ocean",2,"Who led the team that found the Titanic wreck in 1985?","Robert Ballard","Jacques Cousteau","James Cameron","Sylvia Earle"],
+["Ocean",3,"Which of the major oceans is the saltiest?","Atlantic","Pacific","Indian","Arctic"],
+["Geography",3,"Which country has the longest coastline?","Canada","Russia","Indonesia","Australia"],
+["Geography",3,"How many time zones does China officially use?","1","3","4","5"],
+["Science",3,"Which planet has the fastest winds in the solar system?","Neptune","Jupiter","Saturn","Uranus"],
+["Science",3,"Which bone is the only one not connected to any other bone?","Hyoid","Patella","Stapes","Coccyx"],
+["History",2,"What was the name of the first animal to orbit Earth?","Laika","Belka","Ham","Félicette"],
+["Science",1,"What is the chemical symbol for gold?","Au","Ag","Gd","Go"],
+["Science",1,"Which gas makes up most of Earth's atmosphere?","Nitrogen","Oxygen","Argon","Carbon dioxide"],
+["Science",1,"What is the hardest natural material?","Diamond","Quartz","Corundum","Topaz"],
+["Science",2,"Which planet has the most known moons?","Saturn","Jupiter","Uranus","Neptune"],
+["Science",2,"Roughly how fast does light travel?","300,000 km per second","30,000 km per second","3,000,000 km per second","150,000 km per second"],
+["Science",1,"Which part of a cell is called its powerhouse?","Mitochondria","Nucleus","Ribosome","Golgi apparatus"],
+["Science",1,"How many bones are in the adult human body?","206","186","212","230"],
+["Science",1,"Which element has atomic number 1?","Hydrogen","Helium","Lithium","Oxygen"],
+["Science",2,"Which metal is liquid at room temperature?","Mercury","Gallium","Caesium","Bromine"],
+["Science",2,"Which blood type is the universal donor?","O negative","AB positive","A negative","O positive"],
+["Science",1,"Who developed the theory of general relativity?","Albert Einstein","Isaac Newton","Niels Bohr","Stephen Hawking"],
+["Science",2,"Which star is closest to Earth after the Sun?","Proxima Centauri","Sirius","Betelgeuse","Barnard's Star"],
+["Science",1,"What is the pH of pure water at 25 °C?","7","0","5","14"],
+["Science",1,"What is the unit of electrical resistance?","Ohm","Volt","Ampere","Watt"],
+["Science",1,"What is the largest organ of the human body?","Skin","Liver","Lungs","Brain"],
+["Science",2,"Which planet rotates on its side?","Uranus","Neptune","Saturn","Venus"],
+["Science",2,"Tardigrades are also known as what?","Water bears","Sea mice","Rock fleas","Sand dragons"],
+["Science",2,"Which planet has a day longer than its year?","Venus","Mercury","Mars","Jupiter"],
+["Science",2,"What is the hottest planet in our solar system?","Venus","Mercury","Mars","Jupiter"],
+["Science",1,"About how long does sunlight take to reach Earth?","About 8 minutes","About 8 seconds","About 1 hour","About 8 hours"],
+["Science",1,"What does a barometer measure?","Air pressure","Humidity","Wind speed","Temperature"],
+["Science",3,"What is the rarest of the eight common blood types?","AB negative","O negative","B negative","A negative"],
+["History",1,"Who was the first person to walk on the Moon?","Neil Armstrong","Buzz Aldrin","Yuri Gagarin","John Glenn"],
+["History",1,"In what year did the Berlin Wall fall?","1989","1987","1991","1985"],
+["History",2,"Who was the first Roman emperor?","Augustus","Julius Caesar","Nero","Caligula"],
+["History",2,"In what year was Magna Carta sealed?","1215","1066","1415","1314"],
+["History",2,"Which ancient wonder stood in Alexandria?","The Lighthouse","The Colossus","The Hanging Gardens","The Mausoleum"],
+["History",1,"Who painted the Sistine Chapel ceiling?","Michelangelo","Raphael","Leonardo da Vinci","Donatello"],
+["History",1,"Which ship carried the Pilgrims to America in 1620?","Mayflower","Santa María","Endeavour","Beagle"],
+["History",1,"Who was the first woman to win a Nobel Prize?","Marie Curie","Rosalind Franklin","Dorothy Hodgkin","Ada Lovelace"],
+["History",3,"How long did the Hundred Years' War actually last?","116 years","100 years","99 years","124 years"],
+["History",1,"Which civilization built Machu Picchu?","Inca","Aztec","Maya","Olmec"],
+["History",2,"Who was the first US president to live in the White House?","John Adams","George Washington","Thomas Jefferson","James Madison"],
+["History",1,"Whose tomb did Howard Carter open in 1922?","Tutankhamun","Ramesses II","Khufu","Akhenaten"],
+["History",1,"Which country gave the Statue of Liberty to the United States?","France","United Kingdom","Spain","Netherlands"],
+["History",2,"The Rosetta Stone was key to decoding what?","Egyptian hieroglyphs","Linear B","Cuneiform","Maya glyphs"],
+["History",2,"Who co-wrote The Communist Manifesto with Karl Marx?","Friedrich Engels","Vladimir Lenin","Leon Trotsky","Pierre-Joseph Proudhon"],
+["History",1,"Which country invented paper?","China","Egypt","Greece","India"],
+["Books",1,"Who wrote Pride and Prejudice?","Jane Austen","Charlotte Brontë","Emily Brontë","Mary Shelley"],
+["Books",2,"Who wrote One Hundred Years of Solitude?","Gabriel García Márquez","Jorge Luis Borges","Pablo Neruda","Isabel Allende"],
+["Books",1,"“Call me Ishmael” opens which novel?","Moby-Dick","Treasure Island","Twenty Thousand Leagues Under the Seas","The Old Man and the Sea"],
+["Books",2,"What is Captain Nemo's submarine called?","Nautilus","Leviathan","Kraken","Neptune"],
+["Books",1,"Which Shakespeare play has the line “To be, or not to be”?","Hamlet","Macbeth","King Lear","Othello"],
+["Books",1,"What is Bilbo's surname in The Hobbit?","Baggins","Took","Gamgee","Brandybuck"],
+["Art",1,"Which painter cut off part of his own ear?","Vincent van Gogh","Paul Gauguin","Claude Monet","Salvador Dalí"],
+["Art",3,"Which museum holds Van Gogh's The Starry Night?","MoMA, New York","The Louvre","Rijksmuseum","Van Gogh Museum"],
+["Art",2,"Who sculpted The Thinker?","Auguste Rodin","Michelangelo","Gian Lorenzo Bernini","Antonio Canova"],
+["Music",1,"How many strings does a standard violin have?","4","5","6","3"],
+["Music",1,"Which composer kept writing music after going deaf?","Beethoven","Mozart","Bach","Chopin"],
+["Music",1,"Which band released Abbey Road?","The Beatles","The Rolling Stones","The Who","Pink Floyd"],
+["Music",2,"Which pop star was born Stefani Germanotta?","Lady Gaga","Katy Perry","Gwen Stefani","Sia"],
+["Music",1,"How many keys does a standard piano have?","88","76","92","100"],
+["Screen",1,"In Finding Nemo, what kind of fish is Dory?","Blue tang","Clownfish","Angelfish","Butterflyfish"],
+["Screen",1,"What is the name of SpongeBob's pet snail?","Gary","Larry","Barry","Terry"],
+["Screen",1,"In which fictional city does Batman fight crime?","Gotham City","Metropolis","Star City","Central City"],
+["Screen",1,"What is the coffee shop called in Friends?","Central Perk","Java Hut","Monk's Café","The Grind"],
+["Screen",1,"Who directed Jaws (1975)?","Steven Spielberg","George Lucas","Martin Scorsese","Francis Ford Coppola"],
+["Screen",1,"What is the name of Mario's brother?","Luigi","Wario","Toad","Yoshi"],
+["Screen",1,"In The Matrix, which pill does Neo take?","Red","Blue","Green","White"],
+["Games",1,"How many ghosts chase Pac-Man?","4","3","5","6"],
+["Games",1,"Which board game has Boardwalk and Park Place?","Monopoly","Clue","The Game of Life","Risk"],
+["Games",2,"Tetris was created in which country?","Soviet Union","Japan","United States","Finland"],
+["Games",2,"How many dots are on a standard six-sided die in total?","21","18","20","24"],
+["Sport",1,"How many players does a soccer team have on the field?","11","9","10","12"],
+["Sport",1,"In tennis, what is a score of zero called?","Love","Nil","Duck","Nought"],
+["Sport",1,"How long is a marathon?","42.195 km","40 km","42.0 km","45.5 km"],
+["Sport",1,"Which sport uses a shuttlecock?","Badminton","Squash","Table tennis","Pickleball"],
+["Sport",1,"How many holes are on a standard golf course?","18","9","12","24"],
+["Sport",1,"Where were the first modern Olympics held, in 1896?","Athens","Paris","London","Rome"],
+["Sport",2,"In bowling, what are three strikes in a row called?","A turkey","A hat trick","A triple","An eagle"],
+["Sport",3,"What is the maximum break in snooker?","147","155","100","180"],
+["Sport",1,"Who has won the most Olympic gold medals?","Michael Phelps","Mark Spitz","Usain Bolt","Katie Ledecky"],
+["Food",1,"Paella comes from which country?","Spain","Italy","Mexico","Portugal"],
+["Food",2,"Saffron comes from which flower?","Crocus","Marigold","Safflower","Poppy"],
+["Food",2,"Which pastry is used to make éclairs?","Choux","Puff","Filo","Shortcrust"],
+["Food",1,"Which nut is the base of marzipan?","Almond","Hazelnut","Cashew","Pistachio"],
+["Food",1,"Kimchi comes from which country?","Korea","Japan","China","Vietnam"],
+["Food",2,"Which gas makes bread dough rise?","Carbon dioxide","Oxygen","Nitrogen","Hydrogen"],
+["Food",2,"Botanically, what is a banana?","A berry","A drupe","A pome","A legume"],
+["Food",2,"The word “sushi” refers mainly to which ingredient?","Vinegared rice","Raw fish","Seaweed","Soy sauce"],
+["Words",1,"What is a baby kangaroo called?","Joey","Kit","Cub","Pup"],
+["Words",1,"What is a group of crows called?","A murder","A parliament","A pride","A gaggle"],
+["Words",1,"What is a group of owls called?","A parliament","A murder","A gaggle","A pod"],
+["Words",2,"How many sides does a dodecagon have?","12","10","20","11"],
+["Words",3,"Which letter appears in no US state's name?","Q","J","Z","X"],
+["Words",1,"What is the fear of spiders called?","Arachnophobia","Acrophobia","Agoraphobia","Claustrophobia"],
+["Words",1,"How many minutes are in a day?","1,440","1,240","1,340","1,540"],
+["Words",1,"What is 500 in Roman numerals?","D","L","C","M"],
+["Words",2,"What is the dot over a lowercase i called?","A tittle","A jot","A serif","A kern"],
+["Words",1,"What is the most common letter in English text?","E","T","A","S"],
+["Words",1,"What do you call a word that reads the same backwards?","Palindrome","Anagram","Homonym","Acronym"],
+["Nature",1,"What is the longest bone in the human body?","Femur","Tibia","Humerus","Fibula"],
+["Nature",1,"Which is the only mammal capable of true flight?","Bat","Flying squirrel","Sugar glider","Colugo"],
+["Nature",2,"What color is a polar bear's skin?","Black","White","Pink","Grey"],
+["Nature",2,"What is the national animal of Scotland?","Unicorn","Lion","Red deer","Golden eagle"],
+["Nature",1,"Which fruit wears its seeds on the outside?","Strawberry","Raspberry","Kiwi","Fig"],
+["Nature",3,"Which animal has fingerprints almost indistinguishable from a human's?","Koala","Chimpanzee","Gorilla","Orangutan"],
+["Tech",1,"What does CPU stand for?","Central Processing Unit","Computer Personal Unit","Central Program Utility","Core Processing Unit"],
+["Tech",1,"Who co-founded Apple with Steve Jobs?","Steve Wozniak","Bill Gates","Paul Allen","Larry Page"],
+["Tech",1,"In what year was the first iPhone released?","2007","2005","2008","2010"],
+["Tech",2,"What is the Python programming language named after?","Monty Python","The snake","A Greek myth","A NASA project"]
+];
+
+/* ================================================================
+   GAME
+   ================================================================ */
+const TIME=25;
+const TIER={
+  10:{label:"Common catch",col:"#9db8d0",sq:"⬜"},
+  25:{label:"Shallow find",col:"#5cf2ff",sq:"🟦"},
+  50:{label:"Twilight find",col:"#7dffa8",sq:"🟩"},
+  85:{label:"Abyssal find",col:"#ffd36e",sq:"🟨"},
+  100:{label:"Trench find",col:"#ff5a8e",sq:"🟥"}
+};
+const tierOf=p=>p>=100?100:p>=85?85:p>=50?50:p>=25?25:10;
+const LANDMARKS=[
+  [40,"Recreational limit","Recreational scuba limit"],
+  [200,"Twilight zone","Sunlight fades: the twilight zone"],
+  [332,"Scuba record","Deepest scuba dive (Ahmed Gabr, 2014)"],
+  [1000,"Midnight zone","Midnight zone: no sunlight reaches here"],
+  [2250,"Sperm whales","Sperm whales hunt squid this deep"],
+  [2992,"Beaked whale record","Cuvier's beaked whale dive record"],
+  [3800,"Titanic","Wreck of the Titanic"],
+  [4000,"Abyssal zone","Abyssal zone: water near freezing"],
+  [6000,"Hadal zone","Hadal zone: the trenches"],
+  [8336,"Deepest fish","Deepest fish ever filmed (snailfish, 2022)"],
+  [10935,"Challenger Deep","Challenger Deep: the bottom of the ocean"]
+];
+const ZONES=[[0,"Sunlight zone"],[200,"Twilight zone"],[1000,"Midnight zone"],[4000,"Abyssal zone"],[6000,"Hadal zone"]];
+const zoneOf=d=>{let z=ZONES[0][1];for(const [m,n] of ZONES) if(d>=m) z=n;return z};
+
+const $=s=>document.querySelector(s);
+const esc=s=>String(s).replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+const fmt=n=>Math.round(n).toLocaleString("en-US");
+const store={
+  get(k,d){try{const v=localStorage.getItem(k);return v==null?d:JSON.parse(v)}catch(e){return d}},
+  set(k,v){try{localStorage.setItem(k,JSON.stringify(v))}catch(e){}}
+};
+const reduced=matchMedia("(prefers-reduced-motion: reduce)").matches;
+
+/* ---------- answer matching ---------- */
+function norm(s){
+  return String(s).toLowerCase().normalize("NFD").replace(/[̀-ͯ]/g,"")
+    .replace(/&/g," and ").replace(/\+/g,"plus").replace(/#/g,"sharp")
+    .trim().replace(/^(the|a|an)\s+/,"").replace(/[^a-z0-9]/g,"");
+}
+function prep(p){
+  if(p.idx) return p;
+  p.entries=[];p.idx=new Map();
+  for(const pts of [10,25,50,85,100]){
+    const raw=p.t[pts]; if(!raw) continue;
+    for(const item of raw.split(";")){
+      const al=item.split("/").map(s=>s.trim()).filter(Boolean); if(!al.length) continue;
+      const e={name:al[0],pts}; p.entries.push(e);
+      for(const a of al){const k=norm(a); if(k&&!p.idx.has(k)) p.idx.set(k,e)}
+    }
+  }
+  return p;
+}
+function lev(a,b){
+  let prev=Array.from({length:b.length+1},(_,j)=>j);
+  for(let i=1;i<=a.length;i++){
+    const cur=[i];
+    for(let j=1;j<=b.length;j++) cur[j]=Math.min(prev[j]+1,cur[j-1]+1,prev[j-1]+(a[i-1]===b[j-1]?0:1));
+    prev=cur;
+  }
+  return prev[b.length];
+}
+function matchAnswer(p,input){
+  const n=norm(input); if(!n) return null;
+  const idx=prep(p).idx;
+  if(idx.has(n)) return idx.get(n);
+  for(const v of [n+"s",n+"es",n.replace(/ies$/,"y"),n.replace(/es$/,""),n.replace(/s$/,"")])
+    if(v!==n&&idx.has(v)) return idx.get(v);
+  if(n.length<5) return null;
+  const lim=n.length>=9?2:1;
+  let best=null,bd=99,tie=false;
+  for(const [k,e] of idx){
+    if(k.length<5||Math.abs(k.length-n.length)>lim) continue;
+    const d=lev(k,n);
+    if(d<bd){bd=d;best=e;tie=false}
+    else if(d===bd&&e!==best) tie=true;
+  }
+  return bd<=lim&&!tie?best:null;
+}
+
+/* ---------- daily selection ---------- */
+const EPOCH=Date.UTC(2026,9,19);
+const dayNo=()=>Math.max(1,Math.floor((Date.now()-EPOCH)/864e5)+1);
+function rngFrom(seed){let a=seed>>>0;return()=>{a|=0;a=a+0x6D2B79F5|0;let t=Math.imul(a^a>>>15,1|a);t=t+Math.imul(t^t>>>7,61|t)^t;return((t^t>>>14)>>>0)/4294967296}}
+function shuffle(arr,r=Math.random){for(let i=arr.length-1;i>0;i--){const j=Math.floor(r()*(i+1));[arr[i],arr[j]]=[arr[j],arr[i]]}return arr}
+const mkQuiz=(t,r)=>({kind:"quiz",t,opts:shuffle([t[3],t[4],t[5],t[6]],r)});
+function dailySet(day){
+  const r=rngFrom(day*7919+104729);
+  const o=shuffle([...OPEN.keys()],r).slice(0,4).map(i=>({kind:"open",p:prep(OPEN[i])}));
+  const by=[[],[],[],[]]; QUIZ.forEach(t=>by[t[1]].push(t));
+  const q=[1,2,3].map(d=>mkQuiz(by[d][Math.floor(r()*by[d].length)],r));
+  return [o[0],q[0],o[1],q[1],o[2],q[2],o[3]];
+}
+function endlessNext(){
+  const E=S.deck;
+  if(!E.o.length) E.o=shuffle([...OPEN]);
+  if(!E.q.length) E.q=shuffle([...QUIZ]);
+  return S.qs.length%2===0?{kind:"open",p:prep(E.o.pop())}:mkQuiz(E.q.pop());
+}
+const quizPts=(d,left,tries)=>Math.max(5,Math.round([0,40,60,90][d]*(.4+.6*Math.max(0,left)/TIME)*[1,.5,.25,.25][Math.min(tries,3)]/5)*5);
+
+/* ---------- sound ---------- */
+let actx=null,muted=store.get("sonar.mute",false);
+function ac(){
+  if(!actx){try{actx=new(window.AudioContext||window.webkitAudioContext)()}catch(e){return null}}
+  if(actx.state==="suspended") actx.resume();
+  return actx;
+}
+function ping(strength){
+  if(muted) return; const a=ac(); if(!a) return; const t=a.currentTime;
+  [0,.34].forEach((dl,k)=>{
+    const o=a.createOscillator(),g=a.createGain();
+    o.type="sine";
+    o.frequency.setValueAtTime(1250-strength*3,t+dl);
+    o.frequency.exponentialRampToValueAtTime(760,t+dl+1.1);
+    g.gain.setValueAtTime(.0001,t+dl);
+    g.gain.exponentialRampToValueAtTime(k?.045:.15,t+dl+.012);
+    g.gain.exponentialRampToValueAtTime(.0001,t+dl+1.25);
+    o.connect(g).connect(a.destination); o.start(t+dl); o.stop(t+dl+1.3);
+  });
+}
+function thud(){
+  if(muted) return; const a=ac(); if(!a) return; const t=a.currentTime;
+  const o=a.createOscillator(),g=a.createGain();
+  o.type="square"; o.frequency.setValueAtTime(150,t); o.frequency.exponentialRampToValueAtTime(70,t+.18);
+  g.gain.setValueAtTime(.05,t); g.gain.exponentialRampToValueAtTime(.0001,t+.2);
+  o.connect(g).connect(a.destination); o.start(t); o.stop(t+.22);
+}
+function renderMute(){document.querySelectorAll('[data-act="mute"]').forEach(b=>b.textContent=muted?"Sound off":"Sound on")}
+
+/* ---------- state + UI ---------- */
+let S=null;
+const el={
+  home:$("#home"),game:$("#game"),end:$("#end"),ui:$("#ui"),how:$("#how"),
+  console:$("#console"),qcat:$("#qcat"),qtype:$("#qtype"),qtext:$("#qtext"),qcount:$("#qcount"),
+  timerRow:$("#timerRow"),timer:$("#timer"),tfill:$("#tfill"),tnum:$("#tnum"),
+  form:$("#openForm"),guess:$("#guess"),choices:$("#choices"),feedback:$("#feedback"),misses:$("#misses"),reveal:$("#reveal"),
+  depth:$("#depth"),zone:$("#zone"),score:$("#score"),tanks:$("#tanks"),toast:$("#toast")
+};
+function show(id){
+  for(const k of ["home","game","end"]) el[k].hidden=k!==id;
+  el.ui.scrollTop=0;
+}
+
+function renderHome(){
+  const d=dayNo(),rec=store.get("sonar.d."+d,null),best=store.get("sonar.best",0);
+  $("#homeDay").textContent=`Daily dive #${d}`;
+  const p=$("#primaryBtn"),s=$("#secondaryBtn"),t=$("#todayLine");
+  if(rec){
+    t.hidden=false;
+    t.innerHTML=`Today you reached <b>${fmt(rec.score*10)} m</b> · ${esc(zoneOf(rec.score*10))}`;
+    p.textContent="Endless dive"; p.dataset.act="endless";
+    s.textContent="Today's log"; s.dataset.act="log";
+  }else{
+    t.hidden=true;
+    p.textContent=`Start daily dive #${d}`; p.dataset.act="daily";
+    s.textContent="Endless dive"; s.dataset.act="endless";
+  }
+  const b=$("#bestLine"); b.hidden=!best; b.textContent=`Endless record: ${fmt(best)} m`;
+  tickCountdown(); renderBoards();
+  requestAnimationFrame(()=>fitHomeAnchor(false));
+}
+let shownDay=dayNo();
+function tickCountdown(){
+  const now=new Date(),next=Date.UTC(now.getUTCFullYear(),now.getUTCMonth(),now.getUTCDate()+1);
+  const m=Math.max(0,Math.floor((next-now)/6e4));
+  $("#countdown").textContent=`Next daily dive in ${Math.floor(m/60)}h ${m%60}m`;
+  if(dayNo()!==shownDay){shownDay=dayNo(); if(!el.home.hidden) renderHome(); renderBoards()}
+}
+
+/* ---------- shared daily leaderboard (db: scores/<viewer id>) ---------- */
+const LB={db:null,user:null,uid:null,docs:[],ready:false,reconciled:false,note:""};
+const dayKey=d=>"d"+d;
+async function initBoard(){
+  if(!window.claude?.use) return;
+  const [db,user]=await Promise.all([claude.use("db"),claude.use("user")]);
+  if(!db) return;
+  LB.db=db; LB.user=user; LB.uid=user?await user.id():null;
+  if(!LB.uid) LB.note="Sign in to Claude to post your depth here.";
+  document.querySelectorAll(".board").forEach(b=>b.hidden=false);
+  db.collection("scores").onSnapshot(snap=>{
+    LB.docs=snap.docs.map(d=>({id:d.id,data:d.data()||{}}));
+    LB.ready=true; reconcile(); renderBoards();
+  },()=>{LB.note="The leaderboard lost its connection. Reload the page to reconnect."; renderBoards()});
+}
+function myEntry(day){
+  const mine=LB.docs.find(d=>d.id===LB.uid);
+  return mine?.data?.days?.[dayKey(day)]||null;
+}
+/* keep this device and the shared board in step: a dive finished elsewhere counts here, and one finished before the board existed gets posted */
+function reconcile(){
+  if(!LB.uid||LB.reconciled) return;
+  LB.reconciled=true;
+  const day=dayNo(),local=store.get("sonar.d."+day,null),remote=myEntry(day);
+  if(remote&&!local){
+    store.set("sonar.d."+day,{mode:"daily",day,score:+remote.score||0,log:Array.isArray(remote.log)?remote.log:[]});
+    if(!el.home.hidden) renderHome();
+  }else if(local&&!remote) postScore(local);
+}
+async function postScore(rec){
+  if(!LB.db||!LB.uid) return;
+  const entry={score:rec.score,at:Date.now(),log:rec.log.map(l=>({q:String(l.q).slice(0,160),a:String(l.a).slice(0,80),pts:+l.pts||0}))};
+  const ref=LB.db.doc("scores/"+LB.uid),body={days:{[dayKey(rec.day)]:entry}};
+  try{
+    const snap=await ref.get();
+    if(snap.exists) await ref.update(body); else await ref.set(body);
+    LB.note="";
+  }catch(e){
+    LB.note=e?.code==="invalid_argument"
+      ?"Your depth couldn't be posted. Ask the person who shared this game to invite you as an Editor."
+      :"Your depth couldn't be posted yet. It will try again next time you open the game.";
+    LB.reconciled=false;
+  }
+  renderBoards();
+}
+let boardRun=0;
+async function renderBoards(){
+  if(!LB.db) return;
+  const run=++boardRun,day=dayNo(),key=dayKey(day);
+  const rows=LB.docs.map(d=>({id:d.id,e:d.data?.days?.[key]}))
+    .filter(r=>r.e&&Number.isFinite(+r.e.score))
+    .sort((a,b)=>(+b.e.score)-(+a.e.score)||(+a.e.at||0)-(+b.e.at||0));
+  const ps=LB.user&&rows.length?await LB.user.profiles(rows.map(r=>r.id)):{};
+  if(run!==boardRun) return;
+  const played=!!store.get("sonar.d."+day,null);
+  for(const box of document.querySelectorAll(".board")){
+    box.querySelector("h3").textContent=`Today's divers · #${day}`;
+    const ol=box.querySelector(".lb"); ol.replaceChildren();
+    rows.forEach((r,i)=>{
+      const p=ps[r.id]||{},me=r.id===LB.uid,log=Array.isArray(r.e.log)?r.e.log:[];
+      const li=document.createElement("li"); if(me) li.className="me";
+      const rk=document.createElement("span"); rk.className="rk"; rk.textContent=String(i+1);
+      const img=document.createElement("img"); img.alt=""; if(p.avatarUrl) img.src=p.avatarUrl;
+      const nm=document.createElement("span"); nm.className="nm"; nm.textContent=(p.name||"Someone")+(me?" (you)":"");
+      const dp=document.createElement("span"); dp.className="dp"; dp.textContent=fmt((+r.e.score)*10)+" m";
+      const sq=document.createElement("span"); sq.className="sqs"; sq.textContent=log.map(l=>(+l.pts)?TIER[tierOf(+l.pts)].sq:"⬛").join("");
+      li.append(rk,img,nm,dp,sq);
+      if(played&&log.length){
+        const an=document.createElement("span"); an.className="ans";
+        an.textContent=log.map(l=>String(l.a||"—").slice(0,60)).join(" · ");
+        li.append(an);
+      }
+      ol.append(li);
+    });
+    let msg=LB.note;
+    if(!msg&&!LB.ready) msg="Loading today's depths…";
+    else if(!msg&&!rows.length) msg="No one has surfaced yet today. Finish the daily dive to post the first depth.";
+    else if(!msg&&!played) msg="Everyone's answers show up here once you finish today's dive.";
+    box.querySelector(".lbmsg").textContent=msg;
+  }
+}
+
+function startDive(mode){
+  ac();
+  S={mode,day:dayNo(),qs:[],i:0,score:0,log:[],tanks:3,phase:"ask",deck:{o:[],q:[]}};
+  if(mode==="daily") S.qs=dailySet(S.day); else S.qs.push(endlessNext());
+  cam.target=0; cam.anchorT=.3; prevDepth=cam.depth;
+  el.tanks.hidden=mode!=="endless";
+  show("game"); askQuestion();
+}
+
+function renderScore(){
+  el.score.textContent=fmt(S.score);
+  if(S.mode==="endless") el.tanks.textContent="O₂ "+"▮".repeat(Math.max(0,S.tanks))+"▯".repeat(3-Math.max(0,S.tanks));
+}
+
+function askQuestion(){
+  const q=S.qs[S.i],open=q.kind==="open";
+  S.phase="ask"; S.left=TIME; S.tries=0; S.misses=[];
+  el.qcat.textContent=open?q.p.c:q.t[0];
+  el.qcat.classList.toggle("quiz",!open);
+  el.qtype.textContent=open?"Open water · any valid answer · rarer sinks deeper":`Sonar quiz · ${["","shallow","mid-water","deep"][q.t[1]]} · faster scores more`;
+  el.qtext.textContent=open?q.p.q:q.t[2];
+  el.qcount.textContent=S.mode==="daily"?`Dive #${S.day} · ${S.i+1}/${S.qs.length}`:`Endless · Q${S.i+1}`;
+  el.form.hidden=!open; el.choices.hidden=open; el.reveal.hidden=true; el.timerRow.hidden=false;
+  el.feedback.textContent=""; el.feedback.className="feedback"; el.misses.innerHTML="";
+  if(open){el.guess.value=""; setTimeout(()=>el.guess.focus({preventScroll:true}),60)}
+  else el.choices.innerHTML=q.opts.map((o,i)=>`<button type="button" class="btn choice" data-i="${i}"><kbd>${i+1}</kbd><span>${esc(o)}</span></button>`).join("");
+  renderTimer(); renderScore(); fitAnchor();
+  el.console.classList.remove("in"); void el.console.offsetWidth; el.console.classList.add("in");
+}
+
+/* home: put the waterline exactly under the title block, whatever the screen height or scroll */
+function fitHomeAnchor(snap){
+  if(el.home.hidden) return;
+  const b=$("#home .sky").getBoundingClientRect().bottom;
+  cam.anchorT=Math.min(.9,Math.max(-.2,(b-6)/innerHeight));
+  if(snap) cam.anchor=cam.anchorT;
+}
+/* park the probe in the open water between the HUD and the console */
+function fitAnchor(){
+  if(el.game.hidden) return;
+  const g=$("#game .gap").getBoundingClientRect();
+  cam.anchorT=Math.min(.42,Math.max(.14,(g.top+el.ui.scrollTop+g.height*.35)/innerHeight));
+}
+function renderTimer(){
+  const f=Math.max(0,S.left)/TIME;
+  el.tfill.style.width=(f*100)+"%";
+  el.timer.classList.toggle("low",S.left<6);
+  el.tnum.textContent=Math.max(0,S.left).toFixed(1);
+}
+function tick(dt){
+  if(!S||S.phase!=="ask"||!el.how.hidden) return;
+  S.left-=dt; renderTimer();
+  if(S.left<=0){const q=S.qs[S.i]; finish(0,q.kind==="quiz"?q.t[3]:null,true)}
+}
+
+function submitOpen(){
+  if(!S||S.phase!=="ask") return;
+  const v=el.guess.value.trim(); if(!v) return;
+  const q=S.qs[S.i],m=matchAnswer(q.p,v);
+  if(m) return finish(m.pts,m.name,false);
+  S.left-=3; S.misses.push(v);
+  el.misses.innerHTML=S.misses.map(x=>`<span>${esc(x)}</span>`).join("");
+  el.feedback.textContent=`No contact: “${v}” isn't on our charts. −3 s`;
+  el.feedback.className="feedback bad";
+  el.guess.value="";
+  el.guess.classList.remove("shake"); void el.guess.offsetWidth; el.guess.classList.add("shake");
+  thud(); renderTimer();
+}
+function pick(i){
+  if(!S||S.phase!=="ask") return;
+  const q=S.qs[S.i],b=el.choices.children[i];
+  if(q.kind!=="quiz"||!b||b.disabled) return;
+  if(q.opts[i]===q.t[3]){b.classList.add("right"); return finish(quizPts(q.t[1],S.left,S.tries),q.t[3],false)}
+  S.tries++; S.left-=5; b.disabled=true; b.classList.add("out");
+  el.feedback.textContent=`Wrong bearing. −5 s, and the haul is now ${["","halved","quartered","quartered"][Math.min(S.tries,3)]}.`;
+  el.feedback.className="feedback bad"; thud(); renderTimer();
+}
+
+function finish(pts,name,timedOut){
+  S.phase="reveal"; S.revealAt=performance.now();
+  const q=S.qs[S.i],open=q.kind==="open";
+  S.score+=pts; cam.target=S.score*10;
+  S.log.push({q:open?q.p.q:q.t[2],a:pts>0?name:(timedOut?"Time ran out":"—"),pts});
+  if(S.mode==="endless"&&pts===0) S.tanks--;
+  if(pts>0){ping(pts); rings.push({t0:performance.now(),s:pts})} else thud();
+  el.form.hidden=true; el.choices.hidden=true; el.timerRow.hidden=true;
+  el.feedback.textContent=""; el.misses.innerHTML=""; el.guess.blur();
+  el.reveal.innerHTML=revealHTML(q,pts,name,timedOut);
+  el.reveal.hidden=false;
+  renderScore();
+  const nb=$("#nextBtn"); if(nb) nb.focus({preventScroll:true});
+  el.console.scrollIntoView({block:"nearest",behavior:reduced?"auto":"smooth"});
+}
+const isLast=()=>S.mode==="daily"?S.i>=S.qs.length-1:S.tanks<=0;
+
+function revealHTML(q,pts,name,timedOut){
+  const tr=TIER[tierOf(pts)],col=pts?tr.col:"var(--coral)";
+  let head;
+  if(q.kind==="open"){
+    head=pts?`<span class="pts" style="color:${col}">+${pts}</span><span class="tl" style="color:${col}">${tr.label} · ${esc(name)}</span>`
+            :`<span class="pts" style="color:${col}">+0</span><span class="tl" style="color:${col}">Signal lost · time ran out</span>`;
+  }else{
+    head=pts?`<span class="pts" style="color:${col}">+${pts}</span><span class="tl" style="color:${col}">Correct · ${esc(name)}</span>`
+            :`<span class="pts" style="color:${col}">+0</span><span class="tl" style="color:${col}">Signal lost · it was ${esc(name)}</span>`;
+  }
+  let sub=pts?`Sinking ${fmt(pts*10)} m.`:"";
+  if(S.mode==="endless"&&!pts) sub=`Lost an oxygen tank. ${Math.max(0,S.tanks)} left.`;
+  let body="";
+  if(q.kind==="open"){
+    const top=q.p.entries.find(e=>e.pts===100);
+    const rows=[10,25,50,85,100].map(t=>{
+      let ex;
+      if(t===100) ex=top?esc(top.name):"—";
+      else ex=shuffle(q.p.entries.filter(e=>e.pts===t&&e.name!==name)).slice(0,3).map(e=>esc(e.name)).join(", ")||"—";
+      return `<div><i class="sq" style="background:${TIER[t].col}"></i><b>${t}</b><span>${ex}</span></div>`;
+    }).join("");
+    body=`<div class="spec"><h3>Other answers down there</h3>${rows}</div>`;
+    if(q.p.n&&top) body+=`<p class="deep"><b style="color:${TIER[100].col}">${esc(top.name)}:</b> ${esc(q.p.n)}</p>`;
+  }
+  const label=isLast()?(S.mode==="endless"?"Out of air · read the log":"Surface report"):"Dive deeper";
+  return `<div class="rhead">${head}</div>${sub?`<p class="note">${sub}</p>`:""}${body}<button type="button" class="btn big next" id="nextBtn" data-act="next">${label} ▸</button>`;
+}
+
+function next(){
+  if(!S||S.phase!=="reveal"||performance.now()-S.revealAt<350) return;
+  if(isLast()) return endDive();
+  S.i++;
+  if(S.mode==="endless") S.qs.push(endlessNext());
+  askQuestion();
+}
+
+function endDive(){
+  S.phase="done";
+  const rec={mode:S.mode,day:S.day,score:S.score,log:S.log};
+  if(S.mode==="daily"){if(!store.get("sonar.d."+S.day,null)){store.set("sonar.d."+S.day,rec); postScore(rec)}}
+  else{const b=store.get("sonar.best",0); if(S.score*10>b){store.set("sonar.best",S.score*10); rec.best=true}}
+  renderEnd(rec); show("end"); cam.anchorT=.18;
+}
+
+function shareText(rec){
+  const d=rec.score*10;
+  return `SONAR DIVE ${rec.mode==="daily"?"#"+rec.day:"· endless"} · ${fmt(d)} m\n${rec.log.map(l=>l.pts?TIER[tierOf(l.pts)].sq:"⬛").join("")}\n${zoneOf(d)}`;
+}
+function renderEnd(rec){
+  const depth=rec.score*10;
+  const passed=[...LANDMARKS].reverse().find(l=>l[0]<=depth),nxt=LANDMARKS.find(l=>l[0]>depth);
+  $("#endTitle").textContent=rec.mode==="daily"?`Dive #${rec.day} log`:(rec.best?"Endless dive log · new record":"Endless dive log");
+  $("#endDepth").textContent=fmt(depth)+" m";
+  $("#endZone").textContent=`${zoneOf(depth)} · ≈${fmt(1+depth/10)} atm of pressure`;
+  $("#endMark").innerHTML=(passed?`Deepest landmark passed: <b>${esc(passed[2])}</b> at ${fmt(passed[0])} m.`:"You stayed above the 40 m recreational scuba limit.")
+    +(nxt?` Next landmark: ${esc(nxt[2])}, ${fmt(nxt[0]-depth)} m further down.`:" You touched the bottom of the ocean.");
+  $("#endLog").innerHTML=rec.log.map(l=>`<li><i class="sq" style="background:${l.pts?TIER[tierOf(l.pts)].col:"#1b2a3d"}"></i><div><span class="lq">${esc(l.q)}</span><span class="la">${esc(l.a)}</span></div><b>+${l.pts}</b></li>`).join("");
+  $("#shareText").textContent=shareText(rec);
+  $("#copyBtn").textContent="Copy result";
+  const again=$("#againBtn"); again.textContent=rec.mode==="endless"?"Dive again":"Endless dive";
+}
+
+function goHome(){
+  S=null; cam.target=0;
+  show("home"); renderHome();
+}
+
+let quitArmed=0;
+function quit(){
+  const b=$("#quitBtn");
+  if(performance.now()-quitArmed<3000){quitArmed=0; b.textContent="Surface"; goHome(); return}
+  quitArmed=performance.now(); b.textContent="Tap again";
+  setTimeout(()=>{if(performance.now()-quitArmed>=2900) b.textContent="Surface"},3000);
+}
+
+function openHow(){
+  el.how.hidden=false; $("#closeHow").focus();
+}
+function closeHow(){
+  el.how.hidden=true;
+  if(S&&S.phase==="ask"&&S.qs[S.i].kind==="open") el.guess.focus({preventScroll:true});
+}
+$("#tierKey").innerHTML=[10,25,50,85,100].map(t=>`<div><i class="sq" style="background:${TIER[t].col}"></i><b>${t}</b><span>${TIER[t].label}${t===100?": the one rarest answer for each prompt":""}</span></div>`).join("");
+
+let toastTimer=0;
+function toast(msg){
+  const t=el.toast; t.hidden=true; void t.offsetWidth; t.textContent=msg; t.hidden=false;
+  clearTimeout(toastTimer); toastTimer=setTimeout(()=>t.hidden=true,3200);
+}
+
+/* ---------- events ---------- */
+document.addEventListener("click",async e=>{
+  const b=e.target.closest("[data-act]");
+  if(b){
+    const act=b.dataset.act;
+    if(act==="daily") startDive("daily");
+    else if(act==="endless") startDive("endless");
+    else if(act==="how") openHow();
+    else if(act==="closehow") closeHow();
+    else if(act==="home") goHome();
+    else if(act==="next") next();
+    else if(act==="quit") quit();
+    else if(act==="log"){const rec=store.get("sonar.d."+dayNo(),null); if(rec){renderEnd(rec); show("end"); cam.target=rec.score*10; cam.anchorT=.18}}
+    else if(act==="mute"){muted=!muted; store.set("sonar.mute",muted); renderMute(); if(!muted) ping(20)}
+    else if(act==="copy"){
+      const pre=$("#shareText");
+      try{await navigator.clipboard.writeText(pre.textContent); b.textContent="Copied"}
+      catch(err){const r=document.createRange(); r.selectNodeContents(pre); const s=getSelection(); s.removeAllRanges(); s.addRange(r); b.textContent="Selected: press Ctrl+C or ⌘C"}
+    }
+    return;
+  }
+  const c=e.target.closest(".choice");
+  if(c&&!c.disabled) pick(+c.dataset.i);
+  if(e.target===el.how) closeHow();
+});
+el.form.addEventListener("submit",e=>{e.preventDefault(); submitOpen()});
+document.addEventListener("keydown",e=>{
+  if(!el.how.hidden){if(e.key==="Escape") closeHow(); return}
+  if(!S) return;
+  if(S.phase==="reveal"&&e.key==="Enter"&&document.activeElement?.id!=="nextBtn"){e.preventDefault(); next()}
+  else if(S.phase==="ask"&&S.qs[S.i].kind==="quiz"&&/^[1-4]$/.test(e.key)) pick(+e.key-1);
+});
+
+/* ================================================================
+   OCEAN RENDERER
+   Low-res canvas scaled up with pixelated sampling; a hi-res overlay
+   carries landmark labels and sonar rings.
+   ================================================================ */
+const sea=$("#sea"),sx=sea.getContext("2d"),fx=$("#fx"),fxx=fx.getContext("2d");
+let P=4,W=0,H=0,T=0,last=0,prevDepth=0;
+const cam={depth:0,target:0,anchor:.44,anchorT:.44,lastW:0};
+const rings=[];
+const wy=d=>2.2*Math.pow(Math.max(0,d),.72);
+const iwy=w=>Math.pow(Math.max(0,w)/2.2,1/.72);
+const SKY0=[126,178,210],SKY1=[208,233,238];
+const WATER=[[0,[70,156,194]],[30,[38,112,160]],[150,[18,64,112]],[400,[10,37,74]],[1000,[6,20,45]],[4000,[4,12,28]],[11000,[2,5,12]]];
+const mix=(a,b,f)=>[a[0]+(b[0]-a[0])*f,a[1]+(b[1]-a[1])*f,a[2]+(b[2]-a[2])*f];
+function waterRGB(d){
+  for(let i=1;i<WATER.length;i++) if(d<=WATER[i][0]){const [d0,c0]=WATER[i-1],[d1,c1]=WATER[i]; return mix(c0,c1,(d-d0)/(d1-d0))}
+  return WATER[WATER.length-1][1];
+}
+
+const SPR={
+  fish:{r:["a..aaa..","aaaaaaba","a..aaa.."],p:{a:"#ffb35c",b:"#1a2433"}},
+  fish2:{r:["a.cccc..","acccccce","a.cccc.."],p:{a:"#8fb0c8",c:"#c4dcec",e:"#0d1b2e"}},
+  jelly:{r:[".ppp.","ppppp","p.p.p",".p.p.","p.p.p"],p:{p:"rgba(255,143,209,.85)"}},
+  glow:{r:[".ccc.","ccccc","c.c.c",".c.c.","c...c"],p:{c:"rgba(92,242,255,.9)"}},
+  whale:{r:["..........wwwwwwwww.","w......wwwwwwwwwwwww","ww...wwwwwwwwwwwwwew","wwwwwwwwwwwwwwwwwwww","ww...wwwwwwwwwwwwww.","w......wwwwwww.jjjj."],p:{w:"#4f6079",e:"#d3e2ee",j:"#3c4a5e"}},
+  angler:{r:["......y..",".....l...","..gggg...",".ggggggg.","gggggtgtg",".ggggggg.","..gggg..."],p:{y:"#fff59a",l:"#4a5d74",g:"#3e5066",t:"#e9eef2"}},
+  squid:{r:[".rrr.","rrrrr","rerer","rrrrr","r.r.r","r.r.r",".r.r."],p:{r:"#a8324f",e:"#ffd36e"}},
+  snail:{r:["..pppp...","pppppppep","..ppppp.."],p:{p:"#f0d4e0",e:"#2a1b24"}},
+  probe:{r:["...dd....",".yyyyyyy.","yykkyyyyl","yykkyyyyl",".yyyyyyy.","..d...d.."],p:{y:"#ffd36e",k:"#1b2b44",d:"#8a6d2f",l:"#eaffff"}},
+  boat:{r:["............m...........","............m.ff........","............mfff........","..........kkmkk.........","..........kwwwk.........","....kkkkkkkwwwkkkkkkkk..","..hhhhhhhhhhhhhhhhhhhhhh","...hhrrrrrrrrrrrrrrrrhh.","....hhhhhhhhhhhhhhhhhh.."],
+        p:{m:"#2b3d52",f:"#ff5a8e",k:"#c9d6e2",w:"#2fb8c8",h:"#eef3f7",r:"#ff5a8e"}},
+  wreck:{r:["......c..........cc...","....ccccc......cccc...","..ccccccccc...cccccc..",".ccocccccccc..ccccccc.","ccccccccccco..cccccccc"],p:{c:"#5a4234",o:"#8a5a3c"}}
+};
+function spr(sp,x,y,flip){
+  const w=sp.r[0].length;
+  for(let j=0;j<sp.r.length;j++){
+    const row=sp.r[j];
+    for(let i=0;i<row.length;i++){
+      const ch=row[i]; if(ch===".") continue;
+      sx.fillStyle=sp.p[ch];
+      sx.fillRect(Math.round(x+(flip?w-1-i:i)),Math.round(y+j),1,1);
+    }
+  }
+}
+const CREATURES=[
+  {s:"fish",d:18,x:.15,v:7,n:3},{s:"fish2",d:45,x:.7,v:-9,n:4},{s:"fish",d:95,x:.42,v:5,n:2},
+  {s:"jelly",d:280,x:.25,v:1.2},{s:"jelly",d:520,x:.78,v:-1},{s:"jelly",d:760,x:.55,v:.8},
+  {s:"angler",d:1400,x:.8,v:-2},{s:"glow",d:1750,x:.3,v:.6},{s:"whale",d:2150,x:.1,v:4},
+  {s:"squid",d:2700,x:.7,v:-1.5},{s:"angler",d:3300,x:.3,v:2},{s:"glow",d:5000,x:.6,v:-.5},
+  {s:"snail",d:8300,x:.6,v:-1.2},{s:"snail",d:10500,x:.2,v:1}
+];
+const CLOUDS=[{x:.12,y:.22,w:22,v:1.2},{x:.6,y:.14,w:30,v:.8},{x:.35,y:.4,w:16,v:1.6},{x:.78,y:.52,w:12,v:1},{x:.05,y:.6,w:26,v:.6},{x:.9,y:.3,w:18,v:1.1}];
+let SNOW=[];
+function initSnow(){
+  const n=Math.round(W*H/170);
+  SNOW=Array.from({length:n},()=>({x:Math.random()*W,y:Math.random()*H,s:.4+Math.random()*1.4}));
+}
+function resize(){
+  P=innerWidth<640?3:4;
+  W=Math.ceil(innerWidth/P); H=Math.ceil(innerHeight/P);
+  sea.width=W; sea.height=H;
+  const dpr=Math.min(2,devicePixelRatio||1);
+  fx.width=Math.round(innerWidth*dpr); fx.height=Math.round(innerHeight*dpr);
+  fxx.setTransform(dpr,0,0,dpr,0,0);
+  initSnow();
+  document.documentElement.style.setProperty("--surf",Math.round(innerHeight*.44)+"px");
+}
+
+function drawSea(){
+  const camW=wy(cam.depth),aY=H*cam.anchor,surf=Math.round(aY-camW);
+  const dW=camW-cam.lastW; cam.lastW=camW;
+  const sy=d=>Math.round(wy(d)-camW+aY);
+  for(let y=0;y<H;y++){
+    const w=camW+(y-aY);
+    const c=w<0?mix(SKY0,SKY1,surf>0?Math.min(1,y/surf):1):waterRGB(iwy(w));
+    sx.fillStyle=`rgb(${c[0]|0},${c[1]|0},${c[2]|0})`; sx.fillRect(0,y,W,1);
+  }
+  // sky
+  if(surf>0){
+    const cx=Math.round(W*.82),cy=Math.round(surf*.3);
+    if(cy>6){
+      sx.fillStyle="rgba(255,238,196,.18)"; sx.beginPath(); sx.arc(cx,cy,13,0,7); sx.fill();
+      sx.fillStyle="rgba(255,240,205,.35)"; sx.beginPath(); sx.arc(cx,cy,8,0,7); sx.fill();
+      sx.fillStyle="#fff4d6"; sx.beginPath(); sx.arc(cx,cy,5,0,7); sx.fill();
+    }
+    for(const c of CLOUDS){
+      const span=W+c.w+10, x=Math.round(((c.x*span+T*c.v)%span+span)%span-c.w), y=Math.round(surf*c.y);
+      if(y>surf-4) continue;
+      sx.fillStyle="rgba(255,255,255,.92)"; sx.fillRect(x,y,c.w,2); sx.fillRect(x+4,y-1,Math.round(c.w*.45),1);
+      sx.fillStyle="rgba(222,238,246,.8)"; sx.fillRect(x+3,y+2,c.w-6,1);
+    }
+  }
+  // light rays
+  if(surf<H&&cam.depth<450){
+    const bottom=surf+wy(230);
+    for(let i=0;i<6;i++){
+      const x0=W*(i/5.5)+Math.sin(T*.35+i*1.7)*6;
+      const g=sx.createLinearGradient(0,surf,0,bottom);
+      g.addColorStop(0,"rgba(214,246,255,.12)"); g.addColorStop(1,"rgba(214,246,255,0)");
+      sx.fillStyle=g; sx.beginPath();
+      sx.moveTo(x0,surf+1); sx.lineTo(x0+5,surf+1); sx.lineTo(x0+33,bottom); sx.lineTo(x0+26,bottom); sx.fill();
+    }
+  }
+  // Titanic ledge
+  {
+    const gy=sy(3800);
+    if(gy>-20&&gy<H+30){
+      const x0=Math.floor(W*.64);
+      for(let x=x0;x<W;x++){
+        const top=gy+Math.max(0,Math.round((W*.69-x)*1.1))+Math.round(Math.sin(x*.5)*.8);
+        sx.fillStyle="#0c1622"; sx.fillRect(x,top,1,22);
+        sx.fillStyle="#1b2a3a"; sx.fillRect(x,top,1,1);
+      }
+      spr(SPR.wreck,Math.round(W*.72),gy-5,false);
+    }
+  }
+  // creatures
+  for(const c of CREATURES){
+    const sp=SPR[c.s],span=W+60;
+    const by=sy(c.d)+Math.round(Math.sin(T*.8+c.x*9)*2);
+    if(by<-30||by>H+30) continue;
+    const bx=((c.x*span+T*c.v)%span+span)%span-30;
+    for(let k=0;k<(c.n||1);k++){
+      const x=bx-k*11*Math.sign(c.v||1),y=by+(k%2)*4;
+      if(c.s==="angler"||c.s==="glow"){
+        const lx=c.s==="angler"?x+(c.v<0?2:6):x+2;
+        sx.fillStyle=c.s==="angler"?"rgba(255,245,154,.14)":"rgba(92,242,255,.12)";
+        sx.fillRect(lx-3,y-3,7,7); sx.fillRect(lx-5,y-1,11,3);
+      }
+      spr(sp,x,y,c.v<0);
+    }
+  }
+  // seabed at Challenger Deep
+  {
+    const gy=sy(10935);
+    if(gy<H+10){
+      for(let x=0;x<W;x++){
+        const top=gy+Math.round(Math.sin(x*.31)*1.5+Math.sin(x*.07+2)*3);
+        sx.fillStyle="#0a0f17"; sx.fillRect(x,top,1,H-top+1);
+        sx.fillStyle="#1d2938"; sx.fillRect(x,top,1,1);
+      }
+    }
+  }
+  // marine snow
+  sx.fillStyle="rgba(205,232,255,.38)";
+  const streak=Math.min(6,Math.max(1,Math.abs(dW)*.6|0));
+  for(const p of SNOW){
+    if(!reduced) p.y+=p.s*.05-dW;
+    if(p.y<0) p.y+=H; else if(p.y>=H) p.y-=H;
+    if(p.y>surf+1) sx.fillRect(p.x|0,p.y|0,1,streak);
+  }
+  // surface
+  if(surf>=-2&&surf<H){
+    const off=Math.floor(T*8);
+    sx.fillStyle="rgba(228,247,255,.9)";
+    for(let x=0;x<W;x++) if(((x+off)%7)<4) sx.fillRect(x,surf,1,1);
+    sx.fillStyle="rgba(228,247,255,.35)";
+    for(let x=0;x<W;x++) if(((x-off+3)%9)<3) sx.fillRect(x,surf+2,1,1);
+  }
+  // ship, cable, probe
+  const px=Math.round(W/2-4),py=Math.round(aY+5);
+  if(surf>-14&&surf<H+12) spr(SPR.boat,Math.round(W/2-12),surf-8+Math.round(Math.sin(T*1.6)),false);
+  if(py>surf+2){sx.fillStyle="rgba(190,212,232,.5)"; sx.fillRect(Math.round(W/2),Math.max(0,surf+2),1,py-Math.max(0,surf+2))}
+  const la=Math.min(1,Math.max(0,(cam.depth-150)/400))*.17;
+  if(la>0){
+    const g=sx.createLinearGradient(px+9,0,px+70,0);
+    g.addColorStop(0,`rgba(255,243,196,${la})`); g.addColorStop(1,"rgba(255,243,196,0)");
+    sx.fillStyle=g; sx.beginPath(); sx.moveTo(px+9,py+2); sx.lineTo(px+70,py-16); sx.lineTo(px+70,py+22); sx.lineTo(px+9,py+4); sx.fill();
+  }
+  spr(SPR.probe,px,py,false);
+}
+
+function drawFx(now){
+  const w=innerWidth,h=innerHeight;
+  fxx.clearRect(0,0,w,h);
+  const camW=wy(cam.depth),aY=H*cam.anchor;
+  const pad=Math.max(16,0);
+  fxx.font='500 11px "IBM Plex Mono", ui-monospace, monospace';
+  fxx.textAlign="right"; fxx.textBaseline="middle";
+  const marks=el.home.hidden?[[0,"Surface"],...LANDMARKS]:[[0,"Surface"]];
+  for(const [d,short] of marks){
+    const y=Math.round((wy(d)-camW+aY)*P)+.5;
+    if(y<-20||y>h+20) continue;
+    if(d>0){
+      fxx.strokeStyle="rgba(140,190,232,.3)"; fxx.lineWidth=1; fxx.setLineDash([6,6]);
+      fxx.beginPath(); fxx.moveTo(0,y); fxx.lineTo(w,y); fxx.stroke();
+    }
+    const label=`${fmt(d)} m · ${short.toUpperCase()}`;
+    const tw=fxx.measureText(label).width;
+    const bx=w-pad-tw-12,by=y+(d===0?12:-12);
+    fxx.fillStyle="rgba(4,11,24,.78)"; fxx.fillRect(bx,by-9,tw+12,18);
+    fxx.strokeStyle="rgba(92,242,255,.25)"; fxx.setLineDash([]); fxx.strokeRect(bx+.5,by-8.5,tw+11,17);
+    fxx.fillStyle="#a9cbe6"; fxx.fillText(label,w-pad-6,by+.5);
+  }
+  const cx=(W/2)*P,cy=(aY+8)*P;
+  for(let i=rings.length-1;i>=0;i--){
+    const r=rings[i],p=(now-r.t0)/1700;
+    if(p>=1){rings.splice(i,1); continue}
+    fxx.strokeStyle=`rgba(92,242,255,${(1-p)*.75})`; fxx.lineWidth=2; fxx.setLineDash([4,4]);
+    fxx.beginPath(); fxx.arc(cx,cy,18+p*(140+r.s*2.4),0,Math.PI*2); fxx.stroke();
+  }
+  fxx.setLineDash([]);
+}
+
+let hudKey="";
+function updateHud(){
+  if(el.game.hidden) return;
+  const d=Math.round(cam.depth),k=String(d);
+  if(k===hudKey) return; hudKey=k;
+  el.depth.textContent=fmt(d)+" m";
+  el.zone.textContent=`${zoneOf(d)} · ≈${fmt(1+d/10)} atm`;
+}
+function checkLandmarks(){
+  if(S&&S.phase!=="done") for(const l of LANDMARKS) if(prevDepth<l[0]&&cam.depth>=l[0]) toast(`${fmt(l[0])} m · ${l[2]}`);
+  prevDepth=cam.depth;
+}
+
+function frame(now){
+  const dt=Math.min(.1,(now-(last||now))/1000); last=now; T+=dt;
+  const k=reduced?9:2.2;
+  cam.depth+=(cam.target-cam.depth)*(1-Math.exp(-dt*k));
+  if(Math.abs(cam.target-cam.depth)<.05) cam.depth=cam.target;
+  cam.anchor+=(cam.anchorT-cam.anchor)*(1-Math.exp(-dt*3));
+  checkLandmarks();
+  drawSea(); drawFx(now); updateHud(); tick(dt);
+  requestAnimationFrame(frame);
+}
+
+function boot(){
+  resize(); cam.lastW=wy(cam.depth);
+  addEventListener("resize",()=>{resize(); fitAnchor(); fitHomeAnchor(true)});
+  el.ui.addEventListener("scroll",()=>fitHomeAnchor(true),{passive:true});
+  document.fonts?.ready?.then(()=>fitHomeAnchor(true));
+  renderMute(); renderHome(); fitHomeAnchor(true);
+  setInterval(tickCountdown,1000);
+  initBoard();
+  requestAnimationFrame(frame);
+}
+window.claude?.hot?.ready?window.claude.hot.ready(boot):boot();
+</script>
+</body>
+</html>
