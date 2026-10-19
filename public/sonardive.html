@@ -169,6 +169,15 @@ canvas{position:fixed;inset:0;width:100%;height:100%;display:block}
 .lb .sqs{letter-spacing:1px}
 .lbmsg{margin:0;font-size:12.5px;color:var(--dim);line-height:1.5}
 .lbmsg:empty{display:none}
+.lb .dot{width:22px;height:22px;display:block;background:var(--line);clip-path:var(--px)}
+.lb li.me .dot{background:var(--sonar)}
+.who{display:flex;flex-wrap:wrap;gap:10px;align-items:center;font-size:13px;color:var(--dim)}
+.who b{color:var(--sonar);font-weight:600}
+.nameform{display:flex;gap:8px;width:100%}
+.nameform input{flex:1;min-width:0;font:500 16px/1.2 var(--mono);color:var(--ink);background:rgba(0,0,0,.38);border:0;border-radius:0;box-shadow:inset 0 0 0 1px var(--line);padding:10px 12px;outline:none}
+.nameform input:focus{box-shadow:inset 0 0 0 2px var(--sonar)}
+.linkbtn{appearance:none;background:none;border:0;padding:0;color:var(--dim);font:inherit;text-decoration:underline;cursor:pointer}
+.linkbtn:hover,.linkbtn:focus-visible{color:var(--sonar)}
 
 /* ---------- overlays ---------- */
 .modal{position:fixed;inset:0;z-index:5;background:rgba(2,6,14,.74);display:grid;place-items:center;
@@ -971,16 +980,31 @@ function tickCountdown(){
   if(dayNo()!==shownDay){shownDay=dayNo(); if(!el.home.hidden) renderHome(); renderBoards()}
 }
 
-/* ---------- shared daily leaderboard (db: scores/<viewer id>) ---------- */
-const LB={db:null,user:null,uid:null,docs:[],ready:false,reconciled:false,note:""};
+/* ---------- shared daily leaderboard ----------
+   Two backends, picked at run time:
+   - inside Claude: the artifact's db (scores/<viewer id>), names from Claude profiles
+   - on a regular website: a Supabase table (sonar_scores), names typed by players */
+const SUPA={url:"https://ckymkwobaiibznpmvbjd.supabase.co",key:"sb_publishable_LIfnSmZwQd8UoC007ML3eg_n5kfZ6-l"};   // publishable key: safe in the page, the table's policies do the guarding
+const LB={kind:null,db:null,user:null,uid:null,docs:[],rows:[],rowsDay:0,ready:false,reconciled:false,note:"",renaming:false};
 const dayKey=d=>"d"+d;
+const boards=()=>document.querySelectorAll(".board");
+const myName=()=>String(store.get("sonar.name","")||"");
+const slimLog=log=>log.map(l=>({q:String(l.q).slice(0,160),a:String(l.a).slice(0,80),pts:+l.pts||0}));
+
 async function initBoard(){
-  if(!window.claude?.use) return;
-  const [db,user]=await Promise.all([claude.use("db"),claude.use("user")]);
-  if(!db) return;
-  LB.db=db; LB.user=user; LB.uid=user?await user.id():null;
+  if(window.claude?.use){
+    const [db,user]=await Promise.all([claude.use("db"),claude.use("user")]);
+    if(db) initClaudeBoard(db,user);
+    return;
+  }
+  if(SUPA.url&&SUPA.key) initSupaBoard();
+}
+
+/* -- Claude backend -- */
+async function initClaudeBoard(db,user){
+  LB.kind="claude"; LB.db=db; LB.user=user; LB.uid=user?await user.id():null;
   if(!LB.uid) LB.note="Sign in to Claude to post your depth here.";
-  document.querySelectorAll(".board").forEach(b=>b.hidden=false);
+  boards().forEach(b=>b.hidden=false);
   db.collection("scores").onSnapshot(snap=>{
     LB.docs=snap.docs.map(d=>({id:d.id,data:d.data()||{}}));
     LB.ready=true; reconcile(); renderBoards();
@@ -990,19 +1014,9 @@ function myEntry(day){
   const mine=LB.docs.find(d=>d.id===LB.uid);
   return mine?.data?.days?.[dayKey(day)]||null;
 }
-/* keep this device and the shared board in step: a dive finished elsewhere counts here, and one finished before the board existed gets posted */
-function reconcile(){
-  if(!LB.uid||LB.reconciled) return;
-  LB.reconciled=true;
-  const day=dayNo(),local=store.get("sonar.d."+day,null),remote=myEntry(day);
-  if(remote&&!local){
-    store.set("sonar.d."+day,{mode:"daily",day,score:+remote.score||0,log:Array.isArray(remote.log)?remote.log:[]});
-    if(!el.home.hidden) renderHome();
-  }else if(local&&!remote) postScore(local);
-}
-async function postScore(rec){
+async function postClaude(rec){
   if(!LB.db||!LB.uid) return;
-  const entry={score:rec.score,at:Date.now(),log:rec.log.map(l=>({q:String(l.q).slice(0,160),a:String(l.a).slice(0,80),pts:+l.pts||0}))};
+  const entry={score:rec.score,at:Date.now(),log:slimLog(rec.log)};
   const ref=LB.db.doc("scores/"+LB.uid),body={days:{[dayKey(rec.day)]:entry}};
   try{
     const snap=await ref.get();
@@ -1016,41 +1030,155 @@ async function postScore(rec){
   }
   renderBoards();
 }
+
+/* -- Supabase backend -- */
+function supaHeaders(extra){
+  const h={apikey:SUPA.key,"Content-Type":"application/json",...extra};
+  if(SUPA.key.startsWith("eyJ")) h.Authorization="Bearer "+SUPA.key;   // legacy anon key
+  return h;
+}
+function playerId(){
+  let id=store.get("sonar.pid",null);
+  if(!id){
+    const b=crypto.getRandomValues(new Uint8Array(16)); b[6]=b[6]&15|64; b[8]=b[8]&63|128;
+    const h=[...b].map(x=>x.toString(16).padStart(2,"0")).join("");
+    id=`${h.slice(0,8)}-${h.slice(8,12)}-${h.slice(12,16)}-${h.slice(16,20)}-${h.slice(20)}`;
+    store.set("sonar.pid",id);
+  }
+  return id;
+}
+async function initSupaBoard(){
+  LB.kind="supa"; LB.uid=playerId();
+  boards().forEach(b=>b.hidden=false);
+  await refreshSupa();
+  setInterval(()=>{if(!document.hidden&&(!el.home.hidden||!el.end.hidden)) refreshSupa()},30000);
+  document.addEventListener("visibilitychange",()=>{if(!document.hidden) refreshSupa()});
+}
+async function refreshSupa(){
+  const day=dayNo(); LB.rowsDay=day;
+  try{
+    const r=await fetch(`${SUPA.url}/rest/v1/sonar_scores?day=eq.${day}&select=player_id,name,score,log,created_at&order=score.desc,created_at.asc&limit=200`,{headers:supaHeaders()});
+    if(!r.ok) throw new Error("HTTP "+r.status);
+    const data=await r.json();
+    if(day!==LB.rowsDay) return;
+    LB.rows=data.map(d=>({id:String(d.player_id),name:String(d.name||""),score:+d.score||0,at:Date.parse(d.created_at)||0,log:Array.isArray(d.log)?d.log:[]}));
+    LB.ready=true;
+    if(LB.note.startsWith("The leaderboard")) LB.note="";
+    reconcile();
+  }catch(e){LB.note="The leaderboard can't be reached right now. It will try again shortly."}
+  renderBoards();
+}
+async function postSupa(rec){
+  const name=myName();
+  if(!name){renderBoards(); return}
+  try{
+    const r=await fetch(`${SUPA.url}/rest/v1/sonar_scores`,{method:"POST",headers:supaHeaders({Prefer:"return=minimal"}),
+      body:JSON.stringify({day:rec.day,player_id:LB.uid,name,score:rec.score,log:slimLog(rec.log)})});
+    if(r.ok||r.status===409){store.set("sonar.posted."+rec.day,true); LB.note=""}
+    else{LB.note="Your depth couldn't be posted yet. It will try again next time you open the game."; LB.reconciled=false}
+  }catch(e){LB.note="Your depth couldn't be posted yet. It will try again next time you open the game."; LB.reconciled=false}
+  await refreshSupa();
+}
+
+/* -- shared logic -- */
+function postScore(rec){
+  if(LB.kind==="claude") return postClaude(rec);
+  if(LB.kind==="supa") return postSupa(rec);
+}
+/* keep this device and the board in step: a dive finished elsewhere counts here, and an unposted one gets posted */
+function reconcile(){
+  if(!LB.uid||LB.reconciled) return;
+  const day=dayNo(),local=store.get("sonar.d."+day,null);
+  if(LB.kind==="claude"){
+    LB.reconciled=true;
+    const remote=myEntry(day);
+    if(remote&&!local){
+      store.set("sonar.d."+day,{mode:"daily",day,score:+remote.score||0,log:Array.isArray(remote.log)?remote.log:[]});
+      if(!el.home.hidden) renderHome();
+    }else if(local&&!remote) postClaude(local);
+  }else if(LB.kind==="supa"){
+    const posted=LB.rows.some(r=>r.id===LB.uid);
+    if(posted){store.set("sonar.posted."+day,true); LB.reconciled=true}
+    else if(local&&myName()){LB.reconciled=true; postSupa(local)}
+  }
+}
+function setName(raw){
+  const name=String(raw||"").replace(/\s+/g," ").trim().slice(0,24);
+  if(!name) return;
+  store.set("sonar.name",name); LB.renaming=false;
+  const day=dayNo(),local=store.get("sonar.d."+day,null);
+  if(local&&!store.get("sonar.posted."+day,false)){LB.reconciled=false; reconcile()}
+  renderBoards();
+}
+function renderWho(box,i){
+  let who=box.querySelector(".who");
+  if(LB.kind!=="supa"){if(who) who.remove(); return}
+  if(!who){who=document.createElement("div"); who.className="who"; box.querySelector("h3").after(who)}
+  const name=myName();
+  if(name&&!LB.renaming){
+    if(who.dataset.mode==="show"&&who.querySelector("b")?.textContent===name) return;
+    who.dataset.mode="show"; who.replaceChildren();
+    const t=document.createElement("span"); t.append("Posting as ");
+    const b=document.createElement("b"); b.textContent=name; t.append(b);
+    const c=document.createElement("button"); c.type="button"; c.className="linkbtn"; c.dataset.act="rename"; c.textContent="Change";
+    who.append(t,c);
+  }else{
+    if(who.dataset.mode==="edit") return;
+    who.dataset.mode="edit"; who.replaceChildren();
+    const f=document.createElement("form"); f.className="nameform";
+    const lab=document.createElement("label"); lab.className="sr"; lab.htmlFor="diverName"+i; lab.textContent="Diver name";
+    const inp=document.createElement("input"); inp.id="diverName"+i; inp.maxLength=24; inp.placeholder="Your diver name"; inp.autocomplete="nickname"; inp.value=name;
+    const btn=document.createElement("button"); btn.type="submit"; btn.className="btn small"; btn.textContent="Save";
+    f.append(lab,inp,btn); who.append(f);
+  }
+}
 let boardRun=0;
 async function renderBoards(){
-  if(!LB.db) return;
-  const run=++boardRun,day=dayNo(),key=dayKey(day);
-  const rows=LB.docs.map(d=>({id:d.id,e:d.data?.days?.[key]}))
-    .filter(r=>r.e&&Number.isFinite(+r.e.score))
-    .sort((a,b)=>(+b.e.score)-(+a.e.score)||(+a.e.at||0)-(+b.e.at||0));
-  const ps=LB.user&&rows.length?await LB.user.profiles(rows.map(r=>r.id)):{};
-  if(run!==boardRun) return;
+  if(!LB.kind) return;
+  const run=++boardRun,day=dayNo();
+  if(LB.kind==="supa"&&LB.rowsDay!==day){refreshSupa(); return}
+  let rows,names={},avatars={};
+  if(LB.kind==="claude"){
+    rows=LB.docs.map(d=>{const e=d.data?.days?.[dayKey(day)]; return e&&Number.isFinite(+e.score)?{id:d.id,score:+e.score,at:+e.at||0,log:Array.isArray(e.log)?e.log:[]}:null}).filter(Boolean);
+    const ps=LB.user&&rows.length?await LB.user.profiles(rows.map(r=>r.id)):{};
+    if(run!==boardRun) return;
+    for(const r of rows){names[r.id]=ps[r.id]?.name||""; avatars[r.id]=ps[r.id]?.avatarUrl||""}
+  }else{
+    rows=LB.rows.slice();
+    for(const r of rows) names[r.id]=r.name;
+  }
+  rows.sort((a,b)=>b.score-a.score||a.at-b.at);
   const played=!!store.get("sonar.d."+day,null);
-  for(const box of document.querySelectorAll(".board")){
+  boards().forEach((box,i)=>{
     box.querySelector("h3").textContent=`Today's divers · #${day}`;
+    renderWho(box,i);
     const ol=box.querySelector(".lb"); ol.replaceChildren();
-    rows.forEach((r,i)=>{
-      const p=ps[r.id]||{},me=r.id===LB.uid,log=Array.isArray(r.e.log)?r.e.log:[];
+    rows.forEach((r,k)=>{
+      const me=r.id===LB.uid;
       const li=document.createElement("li"); if(me) li.className="me";
-      const rk=document.createElement("span"); rk.className="rk"; rk.textContent=String(i+1);
-      const img=document.createElement("img"); img.alt=""; if(p.avatarUrl) img.src=p.avatarUrl;
-      const nm=document.createElement("span"); nm.className="nm"; nm.textContent=(p.name||"Someone")+(me?" (you)":"");
-      const dp=document.createElement("span"); dp.className="dp"; dp.textContent=fmt((+r.e.score)*10)+" m";
-      const sq=document.createElement("span"); sq.className="sqs"; sq.textContent=log.map(l=>(+l.pts)?TIER[tierOf(+l.pts)].sq:"⬛").join("");
-      li.append(rk,img,nm,dp,sq);
-      if(played&&log.length){
+      const rk=document.createElement("span"); rk.className="rk"; rk.textContent=String(k+1);
+      let mark;
+      if(avatars[r.id]){mark=document.createElement("img"); mark.alt=""; mark.src=avatars[r.id]}
+      else{mark=document.createElement("i"); mark.className="dot"}
+      const nm=document.createElement("span"); nm.className="nm"; nm.textContent=(names[r.id]||"Someone")+(me?" (you)":"");
+      const dp=document.createElement("span"); dp.className="dp"; dp.textContent=fmt(r.score*10)+" m";
+      const sq=document.createElement("span"); sq.className="sqs"; sq.textContent=r.log.map(l=>(+l.pts)?TIER[tierOf(+l.pts)].sq:"⬛").join("");
+      li.append(rk,mark,nm,dp,sq);
+      if(played&&r.log.length){
         const an=document.createElement("span"); an.className="ans";
-        an.textContent=log.map(l=>String(l.a||"—").slice(0,60)).join(" · ");
+        an.textContent=r.log.map(l=>String(l.a||"—").slice(0,60)).join(" · ");
         li.append(an);
       }
       ol.append(li);
     });
     let msg=LB.note;
+    const mine=rows.some(r=>r.id===LB.uid);
     if(!msg&&!LB.ready) msg="Loading today's depths…";
+    else if(!msg&&LB.kind==="supa"&&played&&!mine&&!myName()) msg="Pick a diver name to post today's depth.";
     else if(!msg&&!rows.length) msg="No one has surfaced yet today. Finish the daily dive to post the first depth.";
     else if(!msg&&!played) msg="Everyone's answers show up here once you finish today's dive.";
     box.querySelector(".lbmsg").textContent=msg;
-  }
+  });
 }
 
 function startDive(mode){
@@ -1251,6 +1379,7 @@ document.addEventListener("click",async e=>{
     else if(act==="next") next();
     else if(act==="quit") quit();
     else if(act==="log"){const rec=store.get("sonar.d."+dayNo(),null); if(rec){renderEnd(rec); show("end"); cam.target=rec.score*10; cam.anchorT=.18}}
+    else if(act==="rename"){LB.renaming=true; renderBoards(); setTimeout(()=>b.closest(".board")?.querySelector(".nameform input")?.focus(),0)}
     else if(act==="mute"){muted=!muted; store.set("sonar.mute",muted); renderMute(); if(!muted) ping(20)}
     else if(act==="copy"){
       const pre=$("#shareText");
@@ -1264,6 +1393,7 @@ document.addEventListener("click",async e=>{
   if(e.target===el.how) closeHow();
 });
 el.form.addEventListener("submit",e=>{e.preventDefault(); submitOpen()});
+document.addEventListener("submit",e=>{const f=e.target.closest(".nameform"); if(!f) return; e.preventDefault(); setName(f.querySelector("input").value)});
 document.addEventListener("keydown",e=>{
   if(!el.how.hidden){if(e.key==="Escape") closeHow(); return}
   if(!S) return;
