@@ -12,6 +12,11 @@
   "compatibility_flags": ["nodejs_compat"],
   // Client Gallery photos. Each top-level folder in the bucket is one shoot.
   "r2_buckets": [{ "binding": "CLIENT_PHOTOS", "bucket_name": "hoco2026" }],
+  // Resizes gallery thumbnails inside the password-checked photo route
+  // (src/routes/client-photos.$.ts), so resized copies never sit in a public cache.
+  "images": { "binding": "IMAGES" },
+  // The gallery password is a secret, not set here:
+  //   npx wrangler secret put CLIENT_GALLERY_PASSWORD
   "assets": {
     "binding": "ASSETS",
     "directory": ".output/public"

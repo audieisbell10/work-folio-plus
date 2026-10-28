@@ -1057,11 +1057,14 @@ async function initSupaBoard(){
 async function refreshSupa(){
   const day=dayNo(); LB.rowsDay=day;
   try{
-    const r=await fetch(`${SUPA.url}/rest/v1/sonar_scores?day=eq.${day}&select=player_id,name,score,log,created_at&order=score.desc,created_at.asc&limit=200`,{headers:supaHeaders()});
+    // sonar_board() returns the board without anyone's player ID (only an is_me flag).
+    // Falls back to the old table read until supabase/security-hardening.sql has been run.
+    let r=await fetch(`${SUPA.url}/rest/v1/rpc/sonar_board`,{method:"POST",headers:supaHeaders(),body:JSON.stringify({d:day,me:LB.uid})});
+    if(r.status===404) r=await fetch(`${SUPA.url}/rest/v1/sonar_scores?day=eq.${day}&select=player_id,name,score,log,created_at&order=score.desc,created_at.asc&limit=200`,{headers:supaHeaders()});
     if(!r.ok) throw new Error("HTTP "+r.status);
     const data=await r.json();
-    if(day!==LB.rowsDay) return;
-    LB.rows=data.map(d=>({id:String(d.player_id),name:String(d.name||""),score:+d.score||0,at:Date.parse(d.created_at)||0,log:Array.isArray(d.log)?d.log:[]}));
+    if(day!==LB.rowsDay||!Array.isArray(data)) return;
+    LB.rows=data.map((d,k)=>({id:d.is_me===true?LB.uid:d.player_id!=null?String(d.player_id):"row"+k,name:String(d.name||""),score:+d.score||0,at:Date.parse(d.created_at)||0,log:Array.isArray(d.log)?d.log:[]}));
     LB.ready=true;
     if(LB.note.startsWith("The leaderboard")) LB.note="";
     reconcile();

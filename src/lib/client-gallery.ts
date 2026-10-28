@@ -11,8 +11,17 @@
 // ----------------------------------------------------------------
 
 import { createServerFn } from "@tanstack/react-start";
+import { getRequestHeader, setCookie } from "@tanstack/react-start/server";
 import { clientShoots } from "../content/portfolio";
 import { getClientPhotosBucket, type R2Bucket, type R2Object } from "./client-photos-bucket";
+import {
+  GALLERY_COOKIE,
+  GALLERY_COOKIE_MAX_AGE,
+  checkPassword,
+  getGalleryPassword,
+  isGalleryUnlocked,
+  sessionToken,
+} from "./gallery-auth";
 
 const IMAGE_EXT = /\.(jpe?g|png|webp|avif|gif)$/i;
 
@@ -113,7 +122,10 @@ function folderTitle(prefix: string) {
 
 function summarize(prefix: string, slugPath: string, photos: R2Object[]): ClientFolderSummary {
   const config = clientShoots.find((s) => s.folder === prefix.replace(/\/$/, ""));
-  const newest = photos.reduce<Date | null>((d, o) => (!d || o.uploaded > d ? o.uploaded : d), null);
+  const newest = photos.reduce<Date | null>(
+    (d, o) => (!d || o.uploaded > d ? o.uploaded : d),
+    null,
+  );
   return {
     slugPath,
     title: folderTitle(prefix),
@@ -131,10 +143,14 @@ export const getClientFolder = createServerFn({ method: "GET" })
   .validator((path: string) => path)
   .handler(async ({ data: path }) => {
     const bucket = await getClientPhotosBucket();
-    if (!bucket) return { available: false as const, folder: null };
+    if (!bucket) return { available: false as const, locked: false as const, folder: null };
+    // Nothing about any shoot (names, counts, photos) is sent until the password is entered.
+    if (!(await isGalleryUnlocked(getRequestHeader("cookie")))) {
+      return { available: true as const, locked: true as const, folder: null };
+    }
 
     const resolved = await resolveFolder(bucket, path.split("/").filter(Boolean));
-    if (!resolved) return { available: true as const, folder: null };
+    if (!resolved) return { available: true as const, locked: false as const, folder: null };
     const { prefix, crumbs } = resolved;
     const slugPath = crumbs.at(-1)?.slugPath ?? "";
 
@@ -151,7 +167,9 @@ export const getClientFolder = createServerFn({ method: "GET" })
       )
     ).filter((f) => f.count > 0);
 
-    if (prefix && all.length === 0) return { available: true as const, folder: null };
+    if (prefix && all.length === 0) {
+      return { available: true as const, locked: false as const, folder: null };
+    }
 
     const folder: ClientFolder = {
       ...summarize(prefix, slugPath, all),
@@ -162,7 +180,28 @@ export const getClientFolder = createServerFn({ method: "GET" })
         ? level.photos.map((o) => ({ key: o.key, name: o.key.slice(prefix.length), bytes: o.size }))
         : [],
     };
-    return { available: true as const, folder };
+    return { available: true as const, locked: false as const, folder };
+  });
+
+/** Checks the gallery password and, if right, sets a 30-day session cookie. */
+export const unlockGallery = createServerFn({ method: "POST" })
+  .validator((password: unknown) => (typeof password === "string" ? password.slice(0, 200) : ""))
+  .handler(async ({ data: password }) => {
+    if (!(await getGalleryPassword())) return { ok: false as const, reason: "not-set" as const };
+    if (!(await checkPassword(password))) {
+      // Slow down guessing a little. (For real rate limiting, add a Cloudflare
+      // rate-limiting rule on POST /_serverFn* — see SECURITY-FIXES.md.)
+      await new Promise((r) => setTimeout(r, 800));
+      return { ok: false as const, reason: "wrong" as const };
+    }
+    setCookie(GALLERY_COOKIE, await sessionToken(password), {
+      httpOnly: true,
+      secure: true,
+      sameSite: "lax",
+      path: "/",
+      maxAge: GALLERY_COOKIE_MAX_AGE,
+    });
+    return { ok: true as const };
   });
 
 // ---------------- URLs used by the pages ----------------
@@ -173,9 +212,17 @@ const encodeKey = (key: string) => key.split("/").map(encodeURIComponent).join("
 export const originalUrl = (key: string) => `/client-photos/${encodeKey(key)}`;
 export const downloadUrl = (key: string) => `${originalUrl(key)}?download=1`;
 
-/** A smaller copy made by Cloudflare Image Transformations, for fast grids. */
-export const resizedUrl = (key: string, width: number) =>
-  `/cdn-cgi/image/width=${width},quality=82,fit=scale-down,format=auto${originalUrl(key)}`;
+/** Widths the photo route will resize to (a fixed list, so nobody can run up transformation costs). */
+export const PHOTO_WIDTHS = [400, 800, 1200, 1600, 2400] as const;
+
+/**
+ * A smaller copy for fast grids, resized inside the password-checked photo
+ * route (not the public /cdn-cgi/image cache, which would skip the password).
+ */
+export const resizedUrl = (key: string, width: number) => {
+  const w = PHOTO_WIDTHS.find((x) => x >= width) ?? PHOTO_WIDTHS[PHOTO_WIDTHS.length - 1];
+  return `${originalUrl(key)}?w=${w}`;
+};
 
 export function formatBytes(bytes: number) {
   const mb = bytes / (1024 * 1024);

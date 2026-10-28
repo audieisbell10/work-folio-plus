@@ -3,6 +3,7 @@ import { site } from "../content/portfolio";
 import { getClientFolder } from "../lib/client-gallery";
 import { ClientGalleryHeader } from "../components/client-gallery-header";
 import { ClientFolderGrid } from "../components/client-folder-card";
+import { GalleryLock } from "../components/gallery-lock";
 
 export const Route = createFileRoute("/clients/")({
   loader: () => getClientFolder({ data: "" }),
@@ -18,7 +19,7 @@ export const Route = createFileRoute("/clients/")({
 });
 
 function ClientGalleryPage() {
-  const { available, folder } = Route.useLoaderData();
+  const { available, locked, folder } = Route.useLoaderData();
   const shoots = folder?.folders ?? [];
 
   return (
@@ -31,10 +32,14 @@ function ClientGalleryPage() {
           Your photos, at full resolution.
         </h1>
         <p className="mt-6 max-w-xl text-base leading-relaxed text-muted-foreground md:text-lg">
-          Find your shoot below. Every photo downloads at the exact quality it was taken.
+          {locked
+            ? "Galleries are private. Enter your password to see your shoot."
+            : "Find your shoot below. Every photo downloads at the exact quality it was taken."}
         </p>
 
-        {!available ? (
+        {locked ? (
+          <GalleryLock />
+        ) : !available ? (
           <EmptyNote>Client galleries load on the live site at audieisbell.com.</EmptyNote>
         ) : shoots.length === 0 ? (
           <EmptyNote>New galleries are on the way — check back soon.</EmptyNote>
