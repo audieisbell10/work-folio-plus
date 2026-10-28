@@ -1,0 +1,1302 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Curio · Daily Collecting Game</title>
+<meta name="description" content="Curio is a free daily trivia collecting game. Five prompts, one minute: name answers nobody else would, and every find becomes a specimen card graded by how rare it is.">
+<link rel="canonical" href="https://audieisbell.com/curio/">
+<meta name="theme-color" content="#3a2416">
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="Audie Isbell">
+<meta property="og:title" content="Curio · Daily Collecting Game">
+<meta property="og:description" content="Curio is a free daily trivia collecting game. Five prompts, one minute: name answers nobody else would, and every find becomes a specimen card graded by how rare it is.">
+<meta property="og:url" content="https://audieisbell.com/curio/">
+<meta name="twitter:card" content="summary">
+<link rel="icon" href="/favicon.ico">
+<style>[hidden]{display:none!important} body{margin:0}</style>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IM+Fell+English:ital@0;1&family=IM+Fell+English+SC&family=Courier+Prime:wght@400;700&family=Karla:wght@400;500;700&display=swap">
+<style>
+/* Layout: the page is the inside of a specimen drawer. Green felt ground, a walnut header rail
+   with brass labels, one centered column (max 880px). Specimens are paper cards stamped by rarity. */
+:root{
+  --felt:#17301f;
+  --felt-hi:#21422c;
+  --walnut:#3a2416;
+  --walnut-hi:#5b3a22;
+  --brass:#c9a24a;
+  --brass-hi:#efd48e;
+  --paper:#efe5cc;
+  --paper-shade:#dccdaa;
+  --ink:#211b14;
+  --ink-soft:#64573f;
+  --text:#ece3c9;
+  --text-dim:#a7b6a2;
+  --line:rgba(201,162,74,.35);
+  --r-common:#a39672;
+  --r-scarce:#2f7f68;
+  --r-rare:#3557a6;
+  --r-remarkable:#83409a;
+  --r-singular:#b98a1c;
+  --miss:#7d6a5a;
+  --display:"IM Fell English",Georgia,"Times New Roman",serif;
+  --display-sc:"IM Fell English SC","IM Fell English",Georgia,serif;
+  --label:"Courier Prime","Courier New",ui-monospace,monospace;
+  --ui:"Karla",system-ui,-apple-system,"Segoe UI",sans-serif;
+  color-scheme:dark;
+}
+*{box-sizing:border-box}
+html,body{min-height:100%}
+body{margin:0;color:var(--text);font:16px/1.55 var(--ui);
+  background:
+    radial-gradient(ellipse at 50% -10%,rgba(239,212,142,.10),transparent 60%),
+    repeating-linear-gradient(45deg,rgba(0,0,0,.05) 0 2px,transparent 2px 5px),
+    var(--felt)}
+body::before{content:"";position:fixed;inset:0 0 auto;height:env(safe-area-inset-top,0px);z-index:10;background:var(--walnut)}
+button{font:inherit}
+.wrap{max-width:880px;margin-inline:auto;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
+
+/* ---------- header rail ---------- */
+.rail{position:sticky;top:env(safe-area-inset-top,0px);z-index:5;
+  background:linear-gradient(180deg,var(--walnut-hi),var(--walnut) 55%,#2b1a10);
+  box-shadow:0 2px 0 #1b0f08,0 6px 18px rgba(0,0,0,.35)}
+.rail .wrap{display:flex;align-items:center;justify-content:space-between;gap:12px;padding-block:10px}
+.mark{display:flex;align-items:baseline;gap:10px;background:none;border:0;color:var(--brass-hi);cursor:pointer;padding:0}
+.mark b{font:400 30px/1 var(--display-sc);letter-spacing:.06em}
+.mark small{font:400 12px var(--label);color:var(--brass);letter-spacing:.08em}
+.rail nav{display:flex;gap:8px;flex-wrap:wrap;justify-content:flex-end}
+.chip{appearance:none;cursor:pointer;border:1px solid var(--line);background:rgba(0,0,0,.18);color:var(--brass-hi);
+  font:700 12px/1 var(--label);letter-spacing:.08em;text-transform:uppercase;padding:9px 11px;border-radius:3px}
+.chip:hover{background:rgba(239,212,142,.08)}
+.chip:focus-visible,.btn:focus-visible,.mark:focus-visible{outline:2px solid var(--brass-hi);outline-offset:3px}
+
+/* ---------- buttons ---------- */
+.btn{appearance:none;cursor:pointer;border:0;border-radius:4px;font:700 15px/1 var(--ui);letter-spacing:.02em;padding:15px 22px;
+  color:#2a1a0c;background:linear-gradient(180deg,var(--brass-hi),var(--brass));box-shadow:inset 0 -2px 0 rgba(0,0,0,.25),0 2px 0 #6e5320}
+.btn:hover{filter:brightness(1.05)}
+.btn:active{transform:translateY(1px)}
+.btn:disabled{opacity:.6;cursor:progress}
+.btn.ghost{color:var(--brass-hi);background:transparent;box-shadow:inset 0 0 0 1px var(--line)}
+.btn.ghost:hover{background:rgba(239,212,142,.06)}
+.btn.big{font-size:18px;padding:18px 28px}
+.row{display:flex;flex-wrap:wrap;gap:10px;align-items:center}
+
+/* ---------- home ---------- */
+main{padding-block:28px 56px}
+.screen{display:flex;flex-direction:column;gap:22px}
+.kicker{margin:0;font:700 12px/1.3 var(--label);letter-spacing:.14em;text-transform:uppercase;color:var(--brass)}
+h1.title{margin:0;font:400 clamp(40px,8vw,68px)/1.02 var(--display);color:var(--text);text-wrap:balance}
+h1.title i{color:var(--brass-hi)}
+.lede{margin:0;max-width:60ch;color:var(--text-dim);font-size:17px}
+.drawer{position:relative;border-radius:6px;padding:26px 22px 22px;
+  background:linear-gradient(180deg,#4a2e1b,var(--walnut) 40%,#2c1a0f);
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.08),inset 0 -6px 12px rgba(0,0,0,.35),0 12px 28px rgba(0,0,0,.4)}
+.drawer::before{content:"";position:absolute;inset:0;border-radius:6px;pointer-events:none;
+  background:repeating-linear-gradient(90deg,rgba(255,255,255,.025) 0 3px,transparent 3px 11px)}
+.drawer-front{position:relative;display:grid;grid-template-columns:minmax(0,1fr) auto;gap:18px;align-items:center}
+.labelholder{background:linear-gradient(180deg,var(--brass-hi),var(--brass));padding:6px;border-radius:3px;box-shadow:0 2px 0 #5e461b}
+.labelholder div{background:var(--paper);color:var(--ink);padding:12px 16px;border:1px solid var(--paper-shade)}
+.labelholder .no{font:700 12px var(--label);letter-spacing:.12em;color:var(--ink-soft);text-transform:uppercase}
+.labelholder .nm{font:400 26px/1.15 var(--display);margin-top:2px}
+.labelholder .sub{font:400 13px var(--label);color:var(--ink-soft);margin-top:4px}
+.handle{width:84px;height:30px;border-radius:0 0 40px 40px;border:5px solid var(--brass);border-top:0;box-shadow:0 3px 0 #5e461b;justify-self:end}
+.drawer .row{margin-top:20px}
+.facts{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px}
+.fact{border-top:1px solid var(--line);padding-top:10px}
+.fact b{display:block;font:400 26px/1.1 var(--display);color:var(--brass-hi);font-variant-numeric:tabular-nums}
+.fact span{font-size:13px;color:var(--text-dim)}
+.mini{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:8px}
+.mini .card{padding:8px 8px 10px;min-height:0}
+.mini .card h3{font-size:15px}
+.mini .card .glyph,.mini .card .cq,.mini .card header{display:none}
+.mini .card footer{margin-top:6px}
+.mini .card .stamp{font-size:9px;padding:2px 4px}
+.mini .card .found{display:none}
+.note{margin:0;font-size:14px;color:var(--text-dim)}
+
+/* ---------- play ---------- */
+.playhead{display:grid;grid-template-columns:auto minmax(0,1fr);gap:20px;align-items:center}
+.clock{position:relative;width:86px;height:86px}
+.clock svg{width:100%;height:100%;transform:rotate(-90deg)}
+.clock .face{fill:var(--paper);stroke:var(--brass);stroke-width:3}
+.clock .hand{fill:none;stroke:var(--r-scarce);stroke-width:7;stroke-linecap:butt;transition:stroke .3s}
+.clock.low .hand{stroke:#a3412f}
+.clock span{position:absolute;inset:0;display:grid;place-items:center;font:700 22px var(--label);color:var(--ink);font-variant-numeric:tabular-nums}
+.slots{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:8px}
+.slot{height:44px;border-radius:3px;border:1px dashed var(--line);display:grid;place-items:center;font:700 11px var(--label);color:var(--text-dim);letter-spacing:.06em;text-transform:uppercase;overflow:hidden;padding:0 4px;text-align:center}
+.slot.now{border-style:solid;border-color:var(--brass-hi);color:var(--brass-hi)}
+.slot.got{border:0;background:var(--paper);color:var(--ink);box-shadow:inset 0 -3px 0 var(--tc)}
+.slot.miss{border-style:solid;border-color:var(--miss);color:var(--miss)}
+.slot.got span{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:100%}
+.prompt-card{background:var(--paper);color:var(--ink);border-radius:4px;padding:22px 22px 20px;box-shadow:0 10px 24px rgba(0,0,0,.35);
+  display:flex;flex-direction:column;gap:14px}
+.prompt-card.in{animation:slidein .28s ease-out}
+@keyframes slidein{from{transform:translateY(10px) rotate(-.6deg)}to{transform:none}}
+.pmeta{display:flex;justify-content:space-between;gap:10px;font:700 12px var(--label);letter-spacing:.12em;text-transform:uppercase;color:var(--ink-soft)}
+.prompt{margin:0;font:400 clamp(28px,5.6vw,42px)/1.1 var(--display);text-wrap:balance}
+.answer{display:flex;gap:8px}
+.answer input{flex:1;min-width:0;font:400 20px/1.2 var(--label);color:var(--ink);background:#fbf6e8;border:1px solid var(--paper-shade);border-bottom:2px solid var(--ink-soft);border-radius:3px;padding:14px;outline:none}
+.answer input:focus{border-bottom-color:var(--r-scarce);background:#fffdf5}
+.answer input::placeholder{color:#a69878}
+.answer .btn{flex:none}
+.shake{animation:shake .3s}
+@keyframes shake{25%{transform:translateX(-6px)}50%{transform:translateX(5px)}75%{transform:translateX(-3px)}}
+.pfoot{display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap}
+.feedback{margin:0;min-height:1.4em;font-size:14px;color:var(--ink-soft)}
+.feedback.bad{color:#9a3a29}
+.feedback.good{color:var(--r-scarce)}
+.misses{display:flex;flex-wrap:wrap;gap:6px}
+.misses:empty{display:none}
+.misses span{font:400 13px var(--label);color:#9a3a29;text-decoration:line-through;background:rgba(154,58,41,.08);padding:2px 7px;border-radius:2px}
+.linkbtn{appearance:none;background:none;border:0;padding:4px 0;color:var(--ink-soft);font:700 13px var(--label);letter-spacing:.06em;text-transform:uppercase;text-decoration:underline;cursor:pointer}
+.linkbtn:hover{color:var(--ink)}
+.linkbtn:focus-visible{outline:2px solid var(--r-scarce);outline-offset:2px}
+
+/* ---------- specimen cards ---------- */
+.cards{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:14px}
+.card{--tc:var(--r-common);position:relative;background:var(--paper);color:var(--ink);border-radius:4px;padding:12px 12px 12px;min-height:236px;
+  display:flex;flex-direction:column;box-shadow:0 1px 0 var(--paper-shade),0 8px 18px rgba(0,0,0,.35);overflow:hidden}
+.card::after{content:"";position:absolute;inset:0;pointer-events:none;border:1px solid rgba(0,0,0,.08);border-radius:4px;box-shadow:inset 0 0 0 4px var(--paper),inset 0 0 0 5px var(--tc)}
+.card.t-scarce{--tc:var(--r-scarce)}
+.card.t-rare{--tc:var(--r-rare)}
+.card.t-remarkable{--tc:var(--r-remarkable)}
+.card.t-singular{--tc:var(--r-singular);background:linear-gradient(135deg,#f6ecd0,#efe0b4 40%,#f8efd6 55%,#e8d6a2)}
+.card.t-singular.shine::before{content:"";position:absolute;inset:-40%;pointer-events:none;
+  background:linear-gradient(115deg,transparent 40%,rgba(255,255,255,.55) 50%,transparent 60%);animation:shine 3.2s ease-in-out infinite}
+@keyframes shine{from{transform:translateX(-40%)}to{transform:translateX(40%)}}
+.card header{display:flex;justify-content:space-between;gap:6px;font:700 10.5px var(--label);letter-spacing:.08em;text-transform:uppercase;color:var(--ink-soft);padding:2px 4px 0}
+.card .glyph{display:grid;place-items:center;height:74px;margin:6px 0 2px}
+.card .glyph svg{width:52px;height:52px;fill:none;stroke:var(--tc);stroke-width:1.6;stroke-linecap:round;stroke-linejoin:round}
+.card h3{margin:0;padding:0 4px;font:400 21px/1.12 var(--display);overflow-wrap:anywhere;text-wrap:balance}
+.card .cq{margin:4px 0 0;padding:0 4px;font:italic 400 13px/1.3 var(--display);color:var(--ink-soft)}
+.card footer{margin-top:auto;padding:10px 4px 2px;display:flex;flex-direction:column;align-items:flex-start;gap:6px}
+.stamp{display:inline-block;font:700 11px/1 var(--label);letter-spacing:.14em;text-transform:uppercase;color:var(--tc);border:2px solid var(--tc);padding:4px 6px;border-radius:2px;transform:rotate(-4deg)}
+.found{font:400 12px/1.3 var(--label);color:var(--ink-soft)}
+.found.live::before{content:"● ";color:var(--r-scarce)}
+.card.empty{--tc:var(--miss);background:repeating-linear-gradient(135deg,#d9cba7 0 6px,#e3d6b4 6px 12px)}
+.card.empty h3{color:var(--ink-soft);font-style:italic}
+.cards.flip .card{animation:flip .5s cubic-bezier(.2,.7,.3,1) backwards}
+@keyframes flip{from{transform:perspective(600px) rotateY(80deg);filter:brightness(.6)}to{transform:none}}
+.count{position:absolute;top:8px;right:8px;font:700 11px var(--label);background:var(--ink);color:var(--paper);border-radius:10px;padding:2px 7px}
+
+/* ---------- reveal ---------- */
+.tally{display:flex;flex-wrap:wrap;gap:18px 28px;align-items:baseline}
+.tally b{font:400 44px/1 var(--display);color:var(--brass-hi);font-variant-numeric:tabular-nums}
+.tally span{color:var(--text-dim);font-size:14px}
+.sharebox{display:grid;gap:10px;background:rgba(0,0,0,.18);border:1px solid var(--line);border-radius:4px;padding:14px}
+.sharebox pre{margin:0;white-space:pre-wrap;font:400 14px/1.5 var(--label);color:var(--text);user-select:all;-webkit-user-select:all;overflow-wrap:anywhere}
+.livebar{font:400 13px var(--label);color:var(--text-dim)}
+.board{display:grid;gap:12px;background:var(--paper);color:var(--ink);border-radius:4px;padding:18px 18px 16px;box-shadow:0 10px 24px rgba(0,0,0,.35)}
+.board-head{display:flex;justify-content:space-between;align-items:baseline;gap:10px;flex-wrap:wrap}
+.board h2{margin:0;font:400 26px/1.1 var(--display)}
+.board .note{color:var(--ink-soft);font:400 12px var(--label)}
+.board-list{list-style:none;margin:0;padding:0;display:grid;gap:2px}
+.board-list li{display:grid;grid-template-columns:2.4em minmax(0,1fr) auto;gap:10px;align-items:baseline;padding:7px 8px;border-bottom:1px dashed var(--paper-shade);font-size:15px}
+.board-list li:last-child{border-bottom:0}
+.board-list .rk{font:700 13px var(--label);color:var(--ink-soft);font-variant-numeric:tabular-nums}
+.board-list .nm{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.board-list .nm small{font:400 12px var(--label);color:var(--ink-soft)}
+.board-list .sc{font:700 15px var(--label);font-variant-numeric:tabular-nums}
+.board-list li.me{background:rgba(185,138,28,.16);border-radius:3px;border-bottom-color:transparent}
+.board-list li.gap{display:block;text-align:center;color:var(--ink-soft);padding:2px;border:0}
+.board-list li.empty{display:block;color:var(--ink-soft);font-size:14px;border:0}
+.namerow{display:flex;gap:8px;flex-wrap:wrap}
+.namerow input,.field input:not([type=radio]),.field select,.field textarea{flex:1;min-width:0;font:400 16px/1.3 var(--ui);color:var(--ink);background:#fbf6e8;border:1px solid var(--paper-shade);border-bottom:2px solid var(--ink-soft);border-radius:3px;padding:11px 12px;outline:none}
+.namerow input:focus,.field input:not([type=radio]):focus,.field select:focus,.field textarea:focus{border-bottom-color:var(--r-scarce);background:#fffdf5}
+.namerow .btn{padding:12px 18px}
+.reportline{margin:0;font-size:14px;color:var(--text-dim)}
+.textlink{appearance:none;background:none;border:0;padding:0;color:var(--brass-hi);font:inherit;text-decoration:underline;text-underline-offset:3px;cursor:pointer}
+.textlink:focus-visible{outline:2px solid var(--brass-hi);outline-offset:2px}
+.form{display:grid;gap:14px}
+.field{display:grid;gap:6px;margin:0;padding:0;border:0;font-size:14px}
+.field>span,.field legend{font:700 12px var(--label);letter-spacing:.08em;text-transform:uppercase;color:var(--ink-soft);padding:0;margin-bottom:2px}
+.field label{display:flex;gap:10px;align-items:center;font-size:15px;padding:3px 0;cursor:pointer}
+.field input[type=radio]{margin:0;width:18px;height:18px;accent-color:var(--r-scarce);flex:none}
+.field textarea{resize:vertical;min-height:72px}
+.sheet,.board{color-scheme:light}   /* native controls on paper */
+.sheet .lede-ink{margin:0;color:var(--ink-soft);font-size:15px}
+
+/* ---------- cabinet ---------- */
+.shelf{display:flex;flex-direction:column;gap:12px;padding-bottom:18px;border-bottom:8px solid #2a1a0f;box-shadow:0 10px 0 -6px rgba(0,0,0,.25)}
+.shelf-head{display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap}
+.plaque{display:inline-flex;align-items:center;gap:10px;background:linear-gradient(180deg,var(--brass-hi),var(--brass));color:#2a1a0c;padding:6px 12px;border-radius:2px;font:700 13px var(--label);letter-spacing:.12em;text-transform:uppercase;box-shadow:0 2px 0 #5e461b}
+.plaque.done{background:linear-gradient(180deg,#fff2c2,#e3b84a)}
+.progress{flex:1;min-width:120px;max-width:280px;height:6px;background:rgba(0,0,0,.3);border-radius:3px;overflow:hidden}
+.progress i{display:block;height:100%;background:var(--brass-hi)}
+.shelf .cards{grid-template-columns:repeat(auto-fill,minmax(140px,1fr))}
+.empty-state{border:1px dashed var(--line);border-radius:6px;padding:28px;text-align:center;color:var(--text-dim)}
+.empty-state p{margin:0 0 14px}
+
+/* ---------- modal + toast ---------- */
+.modal{position:fixed;inset:0;z-index:20;background:rgba(8,14,10,.72);display:grid;place-items:center;
+  padding:calc(env(safe-area-inset-top,0px) + 16px) max(16px,env(safe-area-inset-right,0px)) calc(env(safe-area-inset-bottom,0px) + 16px) max(16px,env(safe-area-inset-left,0px))}
+.sheet{width:100%;max-width:560px;max-height:100%;overflow:auto;background:var(--paper);color:var(--ink);border-radius:6px;padding:24px;box-shadow:0 20px 50px rgba(0,0,0,.5)}
+.sheet h2{margin:0 0 10px;font:400 30px/1.1 var(--display)}
+.sheet ol{margin:0 0 16px;padding-left:20px;display:grid;gap:8px;font-size:15px}
+.legend{display:grid;gap:6px;margin-bottom:18px}
+.legend div{display:grid;grid-template-columns:110px minmax(0,1fr);gap:10px;align-items:center;font-size:14px}
+.legend .stamp{justify-self:start}
+.toast{position:fixed;z-index:30;left:50%;bottom:calc(env(safe-area-inset-bottom,0px) + 20px);transform:translateX(-50%);max-width:calc(100% - 32px);
+  background:var(--paper);color:var(--ink);font:700 13px var(--label);letter-spacing:.04em;padding:10px 16px;border-radius:3px;box-shadow:0 8px 20px rgba(0,0,0,.4);animation:toast 2.8s ease forwards}
+@keyframes toast{0%{opacity:0;transform:translate(-50%,8px)}10%,80%{opacity:1;transform:translate(-50%,0)}100%{opacity:0}}
+.sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0)}
+
+@media (max-width:620px){
+  .facts{grid-template-columns:1fr 1fr 1fr}
+  .drawer-front{grid-template-columns:1fr}
+  .handle{justify-self:center}
+  .mini{grid-template-columns:repeat(5,minmax(0,1fr));gap:5px}
+  .mini .card h3{font-size:12px}
+  .playhead{grid-template-columns:auto minmax(0,1fr);gap:12px}
+  .clock{width:70px;height:70px}
+  .slot{height:38px;font-size:10px}
+  .cards{grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
+  .shelf .cards{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .card{min-height:212px}
+  .answer{flex-wrap:wrap}
+  .answer .btn{flex:1}
+  .mark small{display:none}
+  .mark b{font-size:26px}
+  .rail .wrap{gap:8px}
+  .rail nav{gap:6px;flex-wrap:nowrap}
+  .chip{padding:8px 8px;font-size:11px;letter-spacing:.04em}
+  .chip .long{display:none}
+}
+.chip .short{display:none}
+@media (max-width:620px){.chip .short{display:inline}}
+@media (prefers-reduced-motion:reduce){
+  .cards.flip .card,.prompt-card.in,.shake,.toast{animation:none}
+  .card.t-singular.shine::before{animation:none;display:none}
+}
+</style>
+
+</head>
+<body>
+<header class="rail">
+  <div class="wrap">
+    <button type="button" class="mark" data-act="home" aria-label="Curio home"><b>Curio</b><small id="railNo">No. 1</small></button>
+    <nav>
+      <button type="button" class="chip" data-act="cabinet" id="cabChip">Cabinet</button>
+      <button type="button" class="chip" data-act="how" aria-label="How to play"><span class="long">How to play</span><span class="short">Help</span></button>
+      <button type="button" class="chip" data-act="mute" id="muteChip">Sound on</button>
+    </nav>
+  </div>
+</header>
+
+<main class="wrap">
+  <!-- HOME -->
+  <section class="screen" id="home">
+    <p class="kicker">A daily cabinet of rare finds</p>
+    <h1 class="title">Name what nobody else would. <i>Keep it forever.</i></h1>
+    <p class="lede">Five prompts, one sixty-second clock. Every answer you land becomes a specimen card, graded by how many other collectors found the same thing today. Fill your cabinet one drawer at a time.</p>
+    <div class="drawer">
+      <div class="drawer-front">
+        <div class="labelholder"><div>
+          <div class="no" id="drawerNo">Drawer No. 1</div>
+          <div class="nm" id="drawerName">Today's drawer</div>
+          <div class="sub" id="drawerSub">5 prompts · 60 seconds · opens once a day</div>
+        </div></div>
+        <div class="handle" aria-hidden="true"></div>
+      </div>
+      <div class="row">
+        <button type="button" class="btn big" id="openBtn" data-act="daily">Open today's drawer</button>
+        <button type="button" class="btn ghost" data-act="expedition">Go on an expedition</button>
+      </div>
+    </div>
+    <div id="todayBox" hidden>
+      <p class="kicker" style="margin-bottom:10px">Today's finds</p>
+      <div class="mini" id="todayMini"></div>
+    </div>
+    <div class="facts">
+      <div class="fact"><b id="factSpecimens">0</b><span>specimens collected</span></div>
+      <div class="fact"><b id="factShelves">0</b><span>shelves complete</span></div>
+      <div class="fact"><b id="factRarest">—</b><span>rarest grade found</span></div>
+    </div>
+    <p class="note" id="nextNote">The next drawer opens at midnight UTC.</p>
+  </section>
+
+  <!-- PLAY -->
+  <section class="screen" id="play" hidden>
+    <div class="playhead">
+      <div class="clock" id="clock">
+        <svg viewBox="0 0 64 64" aria-hidden="true"><circle class="face" cx="32" cy="32" r="29"></circle><circle class="hand" id="clockHand" cx="32" cy="32" r="22" stroke-dasharray="138.23" stroke-dashoffset="0"></circle></svg>
+        <span id="clockNum">60</span>
+      </div>
+      <div class="slots" id="slots"></div>
+    </div>
+    <div class="prompt-card" id="promptCard">
+      <div class="pmeta"><span id="pCat">Food</span><span id="pCount">Prompt 1 of 5</span></div>
+      <h2 class="prompt" id="pText">Name a cheese</h2>
+      <form class="answer" id="answerForm" autocomplete="off">
+        <label class="sr" for="guess">Your answer</label>
+        <input id="guess" name="guess" type="text" placeholder="Type an answer" autocomplete="off" autocapitalize="off" autocorrect="off" spellcheck="false" enterkeyhint="go">
+        <button type="submit" class="btn">Collect</button>
+      </form>
+      <p class="feedback" id="feedback" aria-live="polite"></p>
+      <div class="misses" id="misses"></div>
+      <div class="pfoot">
+        <span class="found">A wrong guess costs 2 seconds.</span>
+        <button type="button" class="linkbtn" data-act="skip">Skip this prompt</button>
+      </div>
+    </div>
+  </section>
+
+  <!-- REVEAL -->
+  <section class="screen" id="reveal" hidden>
+    <p class="kicker" id="revKicker">Drawer No. 1</p>
+    <h1 class="title" id="revTitle">Your specimens</h1>
+    <div class="tally">
+      <div><b id="revCount">0/5</b> <span>specimens found</span></div>
+      <div><b id="revValue">0</b> <span>cabinet value</span></div>
+    </div>
+    <p class="livebar" id="liveBar"></p>
+    <div class="cards flip" id="revCards"></div>
+    <div class="sharebox">
+      <pre id="shareText"></pre>
+      <div class="row"><button type="button" class="btn ghost" data-act="copy" id="copyBtn">Copy result</button></div>
+    </div>
+    <section class="board" id="board" hidden aria-labelledby="boardTitle">
+      <div class="board-head"><h2 id="boardTitle">Today's top collectors</h2><span class="note" id="boardNote"></span></div>
+      <ol class="board-list" id="boardList"></ol>
+      <form class="namerow" id="nameForm" hidden>
+        <label class="sr" for="nameInput">Your name for the board</label>
+        <input id="nameInput" maxlength="20" placeholder="Your name for the board" autocomplete="nickname" enterkeyhint="done">
+        <button type="submit" class="btn">Save name</button>
+      </form>
+    </section>
+    <div class="row">
+      <button type="button" class="btn" data-act="cabinet">See my cabinet</button>
+      <button type="button" class="btn ghost" data-act="expedition">Another expedition</button>
+      <button type="button" class="btn ghost" data-act="home">Back to the drawer</button>
+    </div>
+    <p class="reportline" id="reportLine" hidden>Was a right answer turned away, or a wrong one let in? <button type="button" class="textlink" data-act="report">Report it</button></p>
+  </section>
+
+  <!-- CABINET -->
+  <section class="screen" id="cabinet" hidden>
+    <p class="kicker">Your collection</p>
+    <h1 class="title">The cabinet</h1>
+    <p class="lede" id="cabLede">Each shelf holds twelve different specimens from one field. Fill a shelf to earn its gold plaque.</p>
+    <div id="shelves"></div>
+  </section>
+</main>
+
+<div class="modal" id="how" hidden role="dialog" aria-modal="true" aria-labelledby="howTitle">
+  <div class="sheet">
+    <h2 id="howTitle">How Curio works</h2>
+    <ol>
+      <li>Each day's drawer has five prompts, the same for everyone, like “Name a cheese.” You get one sixty-second clock for all five.</li>
+      <li>Type any valid answer and it becomes a specimen card. A wrong guess costs two seconds. Stuck? Skip ahead.</li>
+      <li>Cards are graded by how many collectors found the same answer today. Until enough people have played, the grade is an estimate.</li>
+      <li>Expeditions are extra rounds with random prompts. Their finds go in your cabinet too.</li>
+      <li>Collect twelve different specimens in one field to complete that shelf.</li>
+    </ol>
+    <div class="legend" id="legend"></div>
+    <button type="button" class="btn" data-act="closehow" id="closeHow">Start collecting</button>
+  </div>
+</div>
+<div class="modal" id="report" hidden role="dialog" aria-modal="true" aria-labelledby="reportTitle">
+  <form class="sheet form" id="reportForm">
+    <h2 id="reportTitle">Report a catalogue error</h2>
+    <p class="lede-ink">Reports go to the catalogue keeper, who fixes the answer lists.</p>
+    <label class="field"><span>Which prompt?</span><select id="repPrompt"></select></label>
+    <fieldset class="field"><legend>What went wrong?</legend>
+      <label><input type="radio" name="repKind" value="rejected" checked> A right answer was turned away</label>
+      <label><input type="radio" name="repKind" value="accepted"> A wrong answer was accepted</label>
+      <label><input type="radio" name="repKind" value="other"> Something else</label>
+    </fieldset>
+    <label class="field"><span>The answer</span><input id="repAnswer" maxlength="80" autocomplete="off"></label>
+    <label class="field"><span>Anything else? (optional)</span><textarea id="repNote" maxlength="500" rows="3"></textarea></label>
+    <div class="row"><button type="submit" class="btn" id="repSend">Send report</button><button type="button" class="linkbtn" data-act="closereport">Cancel</button></div>
+  </form>
+</div>
+<div class="toast" id="toast" hidden></div>
+
+<script>
+/* ================= QUESTION BANK (shared with Sonar Dive) ================= */
+const OPEN=[
+{c:"Geography",q:"Name a country in Africa",t:{
+10:`Egypt;South Africa;Nigeria;Kenya;Morocco;Ethiopia`,
+25:`Ghana;Algeria;Tunisia;Libya;Sudan;Somalia;Madagascar;Zimbabwe;Uganda;Tanzania;Senegal;Democratic Republic of the Congo/DRC/DR Congo/Congo-Kinshasa/Zaire;Rwanda;Angola;Cameroon;Namibia;Botswana;Mozambique;Zambia`,
+50:`Republic of the Congo/Congo/Congo-Brazzaville;Mali;Niger;Chad;Ivory Coast/Côte d'Ivoire;Liberia;Sierra Leone;Malawi;Eritrea;Mauritania;Burkina Faso;Benin;Togo;Gabon;Guinea;The Gambia/Gambia;Lesotho;Eswatini/Swaziland;Burundi;Djibouti;Central African Republic/CAR;South Sudan;Mauritius;Cape Verde/Cabo Verde;Seychelles`,
+85:`Guinea-Bissau;Equatorial Guinea;Comoros`,
+100:`São Tomé and Príncipe/Sao Tome and Principe/Sao Tome`},
+n:"Africa's second-smallest country: two volcanic islands in the Gulf of Guinea, almost on the equator."},
+
+{c:"Geography",q:"Name a country in South America",t:{
+10:`Brazil;Argentina;Colombia;Peru;Chile`,
+25:`Venezuela;Ecuador;Bolivia;Uruguay`,
+50:`Paraguay`,
+85:`Guyana`,
+100:`Suriname/Surinam`},
+n:"The smallest sovereign country in South America, and the only one where Dutch is the official language."},
+
+{c:"Geography",q:"Name a US state",t:{
+10:`California;Texas;Florida;New York`,
+25:`Washington;Oregon;Arizona;Nevada;Colorado;Illinois;Ohio;Michigan;Georgia;Pennsylvania;New Jersey;Massachusetts;Alaska;Hawaii;Louisiana;Tennessee;North Carolina;Virginia`,
+50:`Utah;New Mexico;Oklahoma;Kansas;Nebraska;Minnesota;Wisconsin;Iowa;Missouri;Arkansas;Mississippi;Alabama;Kentucky;Indiana;South Carolina;Maryland;Connecticut;Maine;Vermont;New Hampshire;Montana;Idaho;Wyoming;West Virginia`,
+85:`North Dakota;South Dakota;Rhode Island`,
+100:`Delaware`},
+n:"The First State: first to ratify the US Constitution, on December 7, 1787."},
+
+{c:"Geography",q:"Name a European capital city",t:{
+10:`London;Paris;Rome;Berlin;Madrid`,
+25:`Amsterdam;Athens;Vienna;Dublin;Lisbon;Prague;Brussels;Moscow;Stockholm;Oslo;Copenhagen;Warsaw;Budapest;Helsinki;Bern/Berne`,
+50:`Reykjavík/Reykjavik;Bucharest;Sofia;Belgrade;Kyiv/Kiev;Zagreb;Bratislava;Ljubljana;Tallinn;Riga;Vilnius;Minsk;Luxembourg/Luxembourg City;Monaco;Valletta;Sarajevo;Tirana;Skopje;Nicosia;Edinburgh;Cardiff;Belfast;Ankara;Tbilisi;Yerevan;Baku`,
+85:`Podgorica;Chișinău/Chisinau;Andorra la Vella;San Marino;Vaduz;Pristina/Priština`,
+100:`Vatican City/Vatican`},
+n:"Capital and country at once: 0.49 km², the smallest state on Earth."},
+
+{c:"Space",q:"Name a planet, dwarf planet or moon in our solar system",t:{
+10:`Earth;Mars;Jupiter;Saturn;Venus;Mercury;Neptune;Uranus;The Moon/Moon/Luna;Pluto`,
+25:`Europa;Titan;Io;Ganymede;Callisto;Phobos;Deimos;Ceres;Enceladus;Triton;Charon`,
+50:`Eris;Makemake;Haumea;Oberon;Titania;Miranda;Mimas;Iapetus;Rhea;Dione;Tethys;Hyperion;Ariel;Umbriel;Phoebe`,
+85:`Nereid;Proteus;Amalthea;Janus;Epimetheus;Himalia;Nix;Hydra;Kerberos;Styx;Pandora;Prometheus;Larissa;Puck;Thebe;Metis;Adrastea;Gonggong;Quaoar;Sedna;Orcus`,
+100:`Dysnomia`},
+n:"The moon of the dwarf planet Eris, named after the Greek spirit of lawlessness."},
+
+{c:"Science",q:"Name a chemical element",t:{
+10:`Oxygen;Hydrogen;Carbon;Gold;Iron;Helium;Nitrogen;Silver`,
+25:`Copper;Sodium;Calcium;Aluminium/Aluminum;Lead;Uranium;Chlorine;Neon;Zinc;Mercury;Potassium;Magnesium;Sulfur/Sulphur;Platinum;Titanium;Lithium;Tin;Silicon;Plutonium;Fluorine;Phosphorus;Nickel;Iodine;Argon;Radon;Cobalt;Chromium;Tungsten`,
+50:`Boron;Beryllium;Krypton;Xenon;Manganese;Arsenic;Bromine;Cadmium;Caesium/Cesium;Radium;Barium;Bismuth;Gallium;Germanium;Selenium;Strontium;Palladium;Rhodium;Iridium;Osmium;Vanadium;Antimony;Tellurium;Thorium;Francium;Polonium;Americium;Einsteinium;Scandium;Zirconium;Molybdenum;Rubidium;Indium;Thallium;Astatine;Neptunium;Curium;Californium;Nobelium;Mendelevium;Fermium;Neodymium`,
+85:`Yttrium;Ytterbium;Terbium;Erbium;Niobium;Technetium;Ruthenium;Hafnium;Tantalum;Rhenium;Lanthanum;Cerium;Praseodymium;Promethium;Samarium;Europium;Gadolinium;Dysprosium;Holmium;Thulium;Lutetium;Actinium;Protactinium;Berkelium;Lawrencium;Rutherfordium;Dubnium;Seaborgium;Bohrium;Hassium;Meitnerium;Darmstadtium;Roentgenium;Copernicium;Nihonium;Flerovium;Moscovium;Livermorium;Tennessine`,
+100:`Oganesson`},
+n:"Element 118, the heaviest ever made. Only a handful of its atoms have ever existed."},
+
+{c:"Myth",q:"Name a Greek god, goddess or Titan",t:{
+10:`Zeus;Poseidon;Hades;Athena/Athene;Aphrodite;Apollo;Ares;Hermes`,
+25:`Hera;Artemis;Demeter;Dionysus/Dionysos;Hephaestus/Hephaistos;Eros;Nike;Persephone;Hestia`,
+50:`Gaia/Gaea;Kronos/Cronus/Cronos;Rhea;Uranus/Ouranos;Helios;Selene;Eos;Pan;Nemesis;Hecate/Hekate;Hypnos;Thanatos;Iris;Morpheus;Tyche;Prometheus;Atlas;Hebe;Asclepius/Asklepios;Nyx;Chaos;Oceanus/Okeanos;Themis;Mnemosyne;Triton;Eris`,
+85:`Erebus;Tartarus;Harmonia;Phobos;Deimos;Aether;Hemera;Chronos;Metis;Leto;Hyperion;Tethys;Coeus;Phoebe;Crius;Iapetus;Boreas;Zephyrus;Notus;Eurus;Peitho;Enyo;Nereus;Proteus;Plutus;Priapus;Aeolus;Hymenaeus/Hymen;Ganymede;Aristaeus`,
+100:`Ananke`},
+n:"The primordial goddess of necessity. Even the gods couldn't argue with her."},
+
+{c:"Literature",q:"Name a play by Shakespeare",t:{
+10:`Hamlet;Romeo and Juliet;Macbeth;Othello;King Lear;A Midsummer Night's Dream`,
+25:`Julius Caesar;The Tempest;Much Ado About Nothing;Twelfth Night;The Merchant of Venice;The Taming of the Shrew;As You Like It;Richard III/Richard 3/Richard the Third;Henry V/Henry 5/Henry the Fifth;Antony and Cleopatra`,
+50:`The Winter's Tale;The Comedy of Errors;Measure for Measure;All's Well That Ends Well;The Merry Wives of Windsor;Coriolanus;Titus Andronicus;Richard II/Richard 2/Richard the Second;Henry IV/Henry 4/Henry IV Part 1/Henry IV Part 2;Henry VI/Henry 6/Henry VI Part 1/Henry VI Part 2/Henry VI Part 3;Troilus and Cressida;Cymbeline;Timon of Athens;The Two Gentlemen of Verona;Love's Labour's Lost/Loves Labors Lost;King John;Pericles/Pericles, Prince of Tyre`,
+85:`Henry VIII/Henry 8;The Two Noble Kinsmen;Edward III/Edward 3`,
+100:`Cardenio`},
+n:"A lost play, performed in 1613. No copy survives."},
+
+{c:"Film",q:"Name a Pixar feature film",t:{
+10:`Toy Story;Finding Nemo;Cars;The Incredibles;Up;Monsters, Inc.`,
+25:`WALL-E/Wall E;Ratatouille;Inside Out;Coco;A Bug's Life;Toy Story 2;Toy Story 3;Toy Story 4;Finding Dory;Brave;Incredibles 2;Monsters University;Cars 2;Cars 3;Inside Out 2`,
+50:`Soul;Luca;Turning Red;Elemental;Onward;Lightyear;Elio`,
+85:`Hoppers`,
+100:`The Good Dinosaur`},
+n:"Released in 2015 after Pixar replaced the director and rebuilt the story mid-production."},
+
+{c:"Sport",q:"Name an NFL team",t:{
+10:`Dallas Cowboys/Cowboys/Dallas;New England Patriots/Patriots/Pats/New England;Green Bay Packers/Packers/Green Bay;Kansas City Chiefs/Chiefs/Kansas City;Pittsburgh Steelers/Steelers/Pittsburgh;San Francisco 49ers/49ers/Niners/Forty Niners/San Francisco`,
+25:`Philadelphia Eagles/Eagles/Philadelphia;New York Giants/Giants;Chicago Bears/Bears/Chicago;Denver Broncos/Broncos/Denver;Las Vegas Raiders/Raiders/Oakland Raiders/Las Vegas;Seattle Seahawks/Seahawks/Seattle;Miami Dolphins/Dolphins/Miami;Baltimore Ravens/Ravens/Baltimore;Buffalo Bills/Bills/Buffalo;Los Angeles Rams/Rams;New Orleans Saints/Saints/New Orleans;Minnesota Vikings/Vikings/Minnesota;Tampa Bay Buccaneers/Buccaneers/Bucs/Tampa Bay;Detroit Lions/Lions/Detroit`,
+50:`Indianapolis Colts/Colts/Indianapolis;Los Angeles Chargers/Chargers;Cincinnati Bengals/Bengals/Cincinnati;Cleveland Browns/Browns/Cleveland;Atlanta Falcons/Falcons/Atlanta;Carolina Panthers/Panthers/Carolina;Arizona Cardinals/Cardinals/Arizona;New York Jets/Jets`,
+85:`Tennessee Titans/Titans/Tennessee;Houston Texans/Texans/Houston;Washington Commanders/Commanders/Washington`,
+100:`Jacksonville Jaguars/Jaguars/Jags/Jacksonville`},
+n:"Founded in 1995. The Jaguars have never reached a Super Bowl."},
+
+{c:"Sport",q:"Name an NBA team",t:{
+10:`Los Angeles Lakers/Lakers;Boston Celtics/Celtics/Boston;Chicago Bulls/Bulls;Golden State Warriors/Warriors/Golden State;Miami Heat/Heat;New York Knicks/Knicks`,
+25:`San Antonio Spurs/Spurs/San Antonio;Cleveland Cavaliers/Cavaliers/Cavs;Dallas Mavericks/Mavericks/Mavs;Brooklyn Nets/Nets/Brooklyn;Philadelphia 76ers/76ers/Sixers;Phoenix Suns/Suns/Phoenix;Houston Rockets/Rockets;Milwaukee Bucks/Bucks/Milwaukee;Denver Nuggets/Nuggets;Los Angeles Clippers/Clippers;Oklahoma City Thunder/Thunder/OKC;Toronto Raptors/Raptors/Toronto`,
+50:`Detroit Pistons/Pistons;Utah Jazz/Jazz/Utah;Portland Trail Blazers/Trail Blazers/Blazers/Portland;Sacramento Kings/Kings/Sacramento;Minnesota Timberwolves/Timberwolves/Wolves;Indiana Pacers/Pacers/Indiana;Atlanta Hawks/Hawks;Orlando Magic/Magic/Orlando;Memphis Grizzlies/Grizzlies/Memphis;Washington Wizards/Wizards`,
+85:`New Orleans Pelicans/Pelicans`,
+100:`Charlotte Hornets/Hornets/Charlotte`},
+n:null},
+
+{c:"Body",q:"Name a bone in the human body",t:{
+10:`Skull/Cranium;Femur/Thigh bone;Rib/Ribs;Vertebra/Vertebrae/Spine/Backbone;Pelvis`,
+25:`Tibia/Shinbone;Fibula;Humerus;Radius;Ulna;Patella/Kneecap;Clavicle/Collarbone;Sternum/Breastbone;Scapula/Shoulder blade;Mandible/Jaw/Jawbone;Coccyx/Tailbone;Hip bone/Hip`,
+50:`Metacarpals/Metacarpal;Metatarsals/Metatarsal;Phalanges/Phalanx;Carpals/Carpal/Wrist bones;Tarsals/Tarsal;Sacrum;Ilium;Ischium;Pubis/Pubic bone;Maxilla;Zygomatic/Cheekbone;Nasal bone;Frontal bone/Frontal;Parietal bone/Parietal;Occipital bone/Occipital;Temporal bone/Temporal;Atlas;Axis;Calcaneus/Heel bone;Talus/Ankle bone`,
+85:`Hyoid;Stapes/Stirrup;Incus/Anvil;Malleus/Hammer;Sphenoid;Ethmoid;Vomer;Lacrimal;Palatine;Scaphoid;Lunate;Triquetrum;Trapezium;Trapezoid;Capitate;Hamate;Cuboid;Navicular;Cuneiform;Sesamoid`,
+100:`Pisiform`},
+n:"A pea-sized wrist bone you can feel at the base of your palm, below the little finger."},
+
+{c:"Nature",q:"Name a dinosaur",t:{
+10:`Tyrannosaurus/T. rex/T rex/Tyrannosaurus rex;Triceratops;Velociraptor/Raptor;Stegosaurus;Brachiosaurus`,
+25:`Diplodocus;Spinosaurus;Ankylosaurus;Allosaurus;Parasaurolophus;Iguanodon;Apatosaurus;Brontosaurus;Dilophosaurus;Pachycephalosaurus;Gallimimus;Compsognathus`,
+50:`Giganotosaurus;Carnotaurus;Argentinosaurus;Therizinosaurus;Deinonychus;Utahraptor;Baryonyx;Oviraptor;Protoceratops;Styracosaurus;Microraptor;Archaeopteryx;Ceratosaurus;Maiasaura;Edmontosaurus;Corythosaurus;Kentrosaurus;Troodon;Coelophysis;Plateosaurus;Mamenchisaurus;Albertosaurus;Gorgosaurus;Megalosaurus;Dreadnoughtus;Patagotitan;Suchomimus;Irritator`,
+85:`Nigersaurus;Mussaurus;Amargasaurus;Eoraptor;Herrerasaurus;Yutyrannus;Sinosauropteryx;Psittacosaurus;Borealopelta;Stygimoloch;Dracorex;Zuniceratops;Mononykus;Masiakasaurus`,
+100:`Minmi`},
+n:"An armored dinosaur from Australia, with one of the shortest dinosaur names."},
+
+{c:"Ocean",q:"Name a species of shark",t:{
+10:`Great white shark/Great white/White shark;Hammerhead/Hammerhead shark;Whale shark;Tiger shark;Bull shark`,
+25:`Mako shark/Mako/Shortfin mako;Nurse shark;Basking shark;Blue shark;Lemon shark;Megalodon;Blacktip shark/Blacktip/Blacktip reef shark;Thresher shark/Thresher`,
+50:`Goblin shark;Greenland shark;Oceanic whitetip/Oceanic whitetip shark;Sand tiger shark/Sand tiger;Angel shark;Wobbegong;Zebra shark;Leopard shark;Dogfish/Spiny dogfish;Megamouth shark/Megamouth;Frilled shark;Bonnethead;Cookiecutter shark/Cookiecutter;Silky shark;Horn shark;Whitetip reef shark;Grey reef shark/Gray reef shark;Porbeagle;Salmon shark;Sevengill shark/Broadnose sevengill;Sixgill shark/Bluntnose sixgill;Catshark;Epaulette shark`,
+85:`Lanternshark/Lantern shark;Pocket shark;Sleeper shark;Swell shark;Bamboo shark;Crocodile shark;Sawshark;Dusky shark;Galapagos shark;Sandbar shark;Spinner shark;School shark/Tope;Smoothhound;Carpet shark;Pyjama shark/Pajama shark;Longfin mako;Velvet belly lanternshark`,
+100:`Ninja lanternshark`},
+n:"Described in 2015 from deep water off Central America. Jet black, and it may glow faintly."},
+
+{c:"Ocean",q:"Name a sea creature with no backbone",t:{
+10:`Jellyfish;Octopus;Squid;Crab;Lobster;Starfish/Sea star;Shrimp/Prawn`,
+25:`Sea urchin/Urchin;Sea cucumber;Clam;Oyster;Mussel;Scallop;Coral;Sea anemone/Anemone;Krill;Sponge/Sea sponge;Sea snail;Barnacle;Nautilus;Cuttlefish;Hermit crab;Sand dollar`,
+50:`Portuguese man o' war/Man o' war/Man of war;Sea slug;Nudibranch;Conch;Abalone;Sea pen;Comb jelly/Ctenophore;Brittle star;Giant isopod/Isopod;Sea spider;Sea butterfly/Pteropod;Salp;Sea squirt/Tunicate;Copepod;Limpet;Whelk;Mantis shrimp;Horseshoe crab;Japanese spider crab/Spider crab;Sea lily/Crinoid;Box jellyfish;Lion's mane jellyfish;Vampire squid;Giant squid;Colossal squid;Blue-ringed octopus;Dumbo octopus`,
+85:`Pyrosome;Siphonophore;Chiton;Sea hare;Feather duster worm/Feather duster;Christmas tree worm;Bobbit worm;Pompeii worm;Yeti crab;Sea angel;Amphipod;Ostracod;Bryozoan;Hydroid;Sea gooseberry;Glass sponge;Giant tube worm/Tube worm;Flatworm/Marine flatworm`,
+100:`Larvacean`},
+n:"A tiny drifter that builds a mucus 'house' to filter food, then abandons it several times a day."},
+
+{c:"Food",q:"Name a fruit",t:{
+10:`Apple;Banana;Orange;Strawberry;Grape;Mango;Pineapple;Watermelon`,
+25:`Pear;Peach;Cherry;Kiwi/Kiwifruit;Lemon;Lime;Blueberry;Raspberry;Plum;Coconut;Grapefruit;Papaya;Pomegranate;Cantaloupe;Apricot;Avocado;Tomato;Blackberry;Fig;Nectarine;Tangerine;Clementine;Cranberry;Melon;Honeydew;Date;Passion fruit;Olive`,
+50:`Guava;Lychee/Litchi;Dragon fruit/Pitaya/Pitahaya;Persimmon;Quince;Gooseberry;Kumquat;Starfruit/Carambola;Jackfruit;Durian;Mulberry;Elderberry;Blackcurrant/Currant/Redcurrant;Boysenberry;Plantain;Mandarin;Tamarind;Loquat;Rambutan;Mangosteen;Feijoa;Yuzu;Cherimoya/Custard apple;Soursop/Guanabana;Physalis/Cape gooseberry/Goldenberry;Huckleberry;Lingonberry;Cloudberry;Açaí/Acai;Pawpaw;Kiwano/Horned melon;Ugli fruit;Pomelo;Sapote;Salak/Snake fruit;Longan`,
+85:`Jabuticaba;Miracle fruit/Miracle berry;Bilberry;Serviceberry/Saskatoon berry/Saskatoon;Langsat;Santol;Marula;Noni;Ackee;Breadfruit;Buddha's hand;Finger lime;Cupuaçu/Cupuacu;Naranjilla;Sea buckthorn;Chokeberry/Aronia;Surinam cherry/Pitanga`,
+100:`Medlar`},
+n:"Traditionally eaten only after 'bletting': left to soften until it is nearly rotten."},
+
+{c:"Food",q:"Name a vegetable",t:{
+10:`Carrot;Potato;Broccoli;Lettuce;Onion;Corn/Sweetcorn;Peas/Pea;Cucumber;Spinach;Tomato`,
+25:`Celery;Cabbage;Cauliflower;Bell pepper/Pepper/Capsicum;Green bean/Green beans/String bean;Garlic;Mushroom;Zucchini/Courgette;Eggplant/Aubergine;Sweet potato;Kale;Asparagus;Beet/Beetroot;Radish;Pumpkin;Squash;Brussels sprouts/Brussels sprout/Brussel sprouts;Artichoke;Leek;Turnip;Okra`,
+50:`Parsnip;Rutabaga/Swede;Bok choy/Pak choi;Swiss chard/Chard;Arugula/Rocket;Collard greens/Collards;Fennel;Kohlrabi;Endive;Radicchio;Watercress;Shallot;Scallion/Green onion/Spring onion;Jicama;Daikon;Butternut squash;Snow peas/Snow pea;Edamame;Celeriac/Celery root;Yam;Taro;Cassava/Yuca/Manioc;Bamboo shoots;Bean sprouts;Water chestnut;Napa cabbage;Broccolini;Rapini/Broccoli rabe;Mustard greens;Horseradish`,
+85:`Sunchoke/Jerusalem artichoke;Romanesco;Sorrel;Purslane;Fiddlehead/Fiddleheads;Chayote;Cardoon;Burdock;Lotus root;Samphire;Gai lan/Chinese broccoli;Mizuna;Tatsoi;Ramps;Nettle/Nettles;Oca;Malanga`,
+100:`Salsify`},
+n:"A long, skinny root nicknamed the 'oyster plant' because some say it tastes like oysters."},
+
+{c:"Food",q:"Name a cheese",t:{
+10:`Cheddar;Mozzarella;Parmesan/Parmigiano-Reggiano/Parmigiano;Swiss;American`,
+25:`Brie;Gouda;Feta;Provolone;Ricotta;Cream cheese;Cottage cheese;Blue cheese;Pepper jack;Monterey Jack/Jack;Colby;Camembert;Gruyère/Gruyere;Goat cheese/Chèvre;Havarti;Muenster/Munster;Manchego;Halloumi;Mascarpone;String cheese;Emmental/Emmentaler`,
+50:`Gorgonzola;Roquefort;Stilton;Pecorino/Pecorino Romano;Asiago;Burrata;Fontina;Edam;Paneer;Queso fresco;Cotija;Oaxaca;Jarlsberg;Raclette;Comté/Comte;Wensleydale;Red Leicester;Double Gloucester;Limburger;Port Salut;Boursin;Taleggio;Reblochon;Brillat-Savarin;Quark;Colby Jack`,
+85:`Époisses/Epoisses;Vacherin;Morbier;Livarot;Pont-l'Évêque/Pont l'Eveque;Caciocavallo;Scamorza;Idiazabal;Mahón/Mahon;Cabrales;Mimolette;Saint Agur;Cantal;Appenzeller;Tête de Moine/Tete de Moine;Stracchino;Robiola;Ossau-Iraty;Kefalotyri;Graviera;Mizithra`,
+100:`Casu marzu`},
+n:"A Sardinian sheep's cheese deliberately fermented by live insect larvae."},
+
+{c:"Food",q:"Name a pasta shape",t:{
+10:`Spaghetti;Penne;Macaroni;Lasagna/Lasagne;Fettuccine/Fettucine;Ravioli`,
+25:`Linguine;Rigatoni;Fusilli;Farfalle/Bow tie/Bowtie;Tortellini;Rotini;Orzo;Angel hair/Capellini;Ziti;Gnocchi;Shells/Conchiglie;Manicotti;Cannelloni;Tagliatelle;Vermicelli;Elbow/Elbows/Elbow macaroni`,
+50:`Orecchiette;Pappardelle;Bucatini;Ditalini;Cavatappi;Campanelle;Gemelli;Radiatori;Paccheri;Conchiglioni;Stelline;Acini di pepe;Rotelle/Wagon wheels;Tortelloni;Agnolotti;Cappelletti;Strozzapreti;Trofie;Casarecce;Mafalde/Mafaldine;Fregola;Bigoli;Pici;Garganelli;Lumache;Anelli;Tubetti;Cavatelli;Perciatelli`,
+85:`Corzetti;Lorighittas;Malloreddus;Busiate;Fileja;Scialatielli;Pizzoccheri;Quadrefiore;Creste di gallo;Strangozzi;Umbricelli;Testaroli;Sorprese`,
+100:`Su filindeu`},
+n:"'Threads of God': pulled by hand in Sardinia into hundreds of hair-thin strands. Only a few people know how."},
+
+{c:"Animals",q:"Name a dog breed",t:{
+10:`Labrador Retriever/Labrador/Lab;Golden Retriever;German Shepherd;Poodle;Bulldog;Beagle;Chihuahua;Pug`,
+25:`Siberian Husky/Husky;Dachshund;Boxer;Rottweiler;Yorkshire Terrier/Yorkie;Shih Tzu;Great Dane;Doberman/Doberman Pinscher;Corgi/Pembroke Welsh Corgi;Border Collie;French Bulldog/Frenchie;Pit Bull/Pitbull/American Pit Bull Terrier;Pomeranian;Chow Chow;Dalmatian;Saint Bernard/St Bernard;Cocker Spaniel;Maltese;Greyhound;Australian Shepherd/Aussie;Bernese Mountain Dog;Shiba Inu;Mastiff;Schnauzer;Jack Russell Terrier/Jack Russell;Bichon Frise;Cavalier King Charles Spaniel;Akita;Samoyed;Alaskan Malamute/Malamute`,
+50:`Weimaraner;Vizsla;Basset Hound;Bloodhound;Newfoundland;Whippet;Papillon;Pekingese;Lhasa Apso;West Highland Terrier/Westie;Scottish Terrier/Scottie;Bull Terrier;Staffordshire Bull Terrier/Staffy;Shar Pei;Basenji;Rhodesian Ridgeback;Irish Setter;Irish Wolfhound;Saluki;Afghan Hound;Borzoi;Great Pyrenees;Collie/Rough Collie;Shetland Sheepdog/Sheltie;Cane Corso;Keeshond;Airedale Terrier/Airedale;Havanese;Italian Greyhound;Boston Terrier;Springer Spaniel/English Springer Spaniel;German Shorthaired Pointer/Pointer;Chinese Crested;Belgian Malinois/Malinois;Dogue de Bordeaux;Leonberger;Old English Sheepdog;Bullmastiff;Miniature Pinscher/Min Pin;Cockapoo;Labradoodle;Goldendoodle`,
+85:`Komondor;Puli;Xoloitzcuintli/Xolo;Otterhound;Lagotto Romagnolo;Azawakh;Catahoula;Mudi;Kooikerhondje;Bergamasco;Thai Ridgeback;Sloughi;Peruvian Inca Orchid;Stabyhoun;Dandie Dinmont Terrier;Sealyham Terrier;Skye Terrier;Bedlington Terrier;Brussels Griffon;Affenpinscher;Schipperke;Pharaoh Hound;Ibizan Hound;Finnish Spitz;Tibetan Mastiff;Kuvasz;Briard;Beauceron;Chinook`,
+100:`Norwegian Lundehund/Lundehund`},
+n:"Bred to climb cliffs after puffins: six toes on each foot and a neck that bends back to touch its spine."},
+
+{c:"Music",q:"Name a musical instrument",t:{
+10:`Piano;Guitar;Drums;Violin;Flute;Trumpet;Saxophone`,
+25:`Cello;Clarinet;Harp;Trombone;Tuba;Ukulele;Banjo;Bass/Bass guitar/Double bass;Harmonica;Accordion;Xylophone;Organ;Oboe;French horn/Horn;Keyboard;Tambourine;Triangle;Viola;Recorder;Bagpipes;Synthesizer;Bongos;Cymbals;Mandolin;Bassoon;Piccolo`,
+50:`Sitar;Didgeridoo;Marimba;Glockenspiel;Timpani;Harpsichord;Castanets;Cowbell;Conga;Djembe;Steel drum/Steel pan;Kazoo;Ocarina;Pan flute/Panpipes;Theremin;Vibraphone;Lute;Lyre;Zither;Cornet;Flugelhorn;Euphonium;Sousaphone;Celesta;Bugle;Maracas;Tabla;Koto;Shamisen;Erhu;Bouzouki;Balalaika;Dulcimer;Melodica;Kalimba;Cajón/Cajon;English horn/Cor anglais;Contrabassoon;Gong`,
+85:`Hurdy-gurdy;Nyckelharpa;Oud;Kora;Guzheng;Pipa;Shakuhachi;Sarangi;Veena;Santoor;Duduk;Handpan/Hang drum;Bandoneón/Bandoneon;Mbira;Ondes Martenot;Sackbut;Crumhorn;Theorbo;Viola da gamba;Hardanger fiddle;Kantele;Charango;Berimbau;Waterphone;Glass harmonica`,
+100:`Serpent`},
+n:"A bass horn from the 1590s, carved from wood in an S-curve and covered in leather."},
+
+{c:"Sport",q:"Name a Summer Olympic sport (past, present, or LA 2028)",t:{
+10:`Swimming;Gymnastics;Athletics/Track and field/Track;Basketball;Football/Soccer`,
+25:`Tennis;Volleyball;Boxing;Diving;Cycling;Rowing;Wrestling;Fencing;Archery;Judo;Weightlifting;Table tennis/Ping pong;Badminton;Golf;Rugby/Rugby sevens;Water polo;Sailing;Triathlon;Beach volleyball;Skateboarding;Surfing;Taekwondo;Equestrian;Hockey/Field hockey;Handball;Baseball;Softball;Canoeing/Kayaking/Canoe;Shooting`,
+50:`Modern pentathlon;Artistic swimming/Synchronized swimming;Trampoline;Sport climbing/Climbing;Breaking/Breakdancing;BMX;Rhythmic gymnastics;Marathon swimming/Open water swimming;Canoe slalom;Mountain biking;Dressage;Show jumping;Eventing;Cricket;Lacrosse;Squash;Flag football`,
+85:`Tug of war;Polo;Croquet;Jeu de paume;Rope climbing;Motorboating/Powerboating;Basque pelota/Pelota;Rackets/Racquets`,
+100:`Live pigeon shooting`},
+n:"Contested once, at Paris 1900, with real birds released from traps. It was never held again."},
+
+{c:"History",q:"Name a US president",t:{
+10:`George Washington/Washington;Abraham Lincoln/Lincoln/Abe Lincoln;Barack Obama/Obama;Donald Trump/Trump;John F. Kennedy/Kennedy/JFK;Ronald Reagan/Reagan;Joe Biden/Biden`,
+25:`Thomas Jefferson/Jefferson;Franklin D. Roosevelt/FDR/Franklin Roosevelt/Roosevelt;Theodore Roosevelt/Teddy Roosevelt/Teddy;Richard Nixon/Nixon;Bill Clinton/Clinton;George W. Bush/George Bush/Bush;Jimmy Carter/Carter;Dwight D. Eisenhower/Eisenhower/Ike;Harry S. Truman/Truman/Harry Truman;John Adams/Adams;Lyndon B. Johnson/LBJ/Lyndon Johnson/Johnson;Gerald Ford/Ford;George H. W. Bush/George HW Bush/Bush Sr;Andrew Jackson/Jackson;Ulysses S. Grant/Grant`,
+50:`James Madison/Madison;James Monroe/Monroe;John Quincy Adams;Woodrow Wilson/Wilson;Herbert Hoover/Hoover;Calvin Coolidge/Coolidge;Warren G. Harding/Harding;William Howard Taft/Taft;William McKinley/McKinley;Grover Cleveland/Cleveland;James K. Polk/Polk;Martin Van Buren/Van Buren;Andrew Johnson;James A. Garfield/Garfield;William Henry Harrison/Harrison;Zachary Taylor/Taylor;James Buchanan/Buchanan`,
+85:`John Tyler/Tyler;Millard Fillmore/Fillmore;Rutherford B. Hayes/Hayes;Chester A. Arthur/Chester Arthur/Arthur;Benjamin Harrison`,
+100:`Franklin Pierce/Pierce`},
+n:"The 14th president, 1853 to 1857. His own party refused to renominate him."},
+
+{c:"Space",q:"Name a constellation",t:{
+10:`Orion;Ursa Major/Big Dipper/Great Bear;Ursa Minor/Little Dipper/Little Bear`,
+25:`Cassiopeia;Scorpius/Scorpio;Leo;Taurus;Gemini;Cancer;Virgo;Libra;Sagittarius;Capricornus/Capricorn;Aquarius;Pisces;Aries;Draco;Cygnus;Pegasus;Andromeda;Perseus;Hercules;Lyra;Crux/Southern Cross`,
+50:`Canis Major;Canis Minor;Cepheus;Boötes/Bootes;Aquila;Auriga;Centaurus;Corona Borealis;Hydra;Ophiuchus;Cetus;Eridanus;Lepus;Monoceros;Delphinus;Lupus;Ara;Carina;Vela;Puppis;Columba;Corvus;Crater;Sagitta;Serpens;Triangulum;Lynx;Camelopardalis;Coma Berenices;Canes Venatici;Leo Minor;Lacerta;Vulpecula;Equuleus;Phoenix;Pavo;Tucana;Grus;Dorado;Hydrus;Indus`,
+85:`Antlia;Caelum;Chamaeleon;Circinus;Fornax;Horologium;Microscopium;Musca;Norma;Octans;Pictor;Piscis Austrinus;Pyxis;Reticulum;Sculptor;Scutum;Sextans;Telescopium;Triangulum Australe;Volans;Apus;Corona Australis`,
+100:`Mensa`},
+n:"'The Table Mountain', the faintest of all 88 constellations."},
+
+{c:"Money",q:"Name a currency, current or historical",t:{
+10:`Dollar/US dollar;Euro;Pound/Pound sterling/British pound;Yen;Peso`,
+25:`Rupee;Yuan/Renminbi/RMB;Franc/Swiss franc;Ruble/Rouble;Won;Real;Rand;Krona;Krone;Lira;Dinar;Shekel/Sheqel;Baht;Rupiah;Ringgit;Dirham;Riyal/Rial;Bitcoin`,
+50:`Złoty/Zloty;Forint;Koruna;Lev;Leu;Hryvnia;Lari;Dram;Tenge;Som;Manat;Kip;Riel;Kyat;Taka;Afghani;Dong;Sol;Boliviano;Guaraní/Guarani;Colón/Colon;Córdoba/Cordoba;Lempira;Quetzal;Balboa;Gourde;Bolívar/Bolivar;Naira;Cedi;Shilling;Birr;Kwacha;Kwanza;Pula;Loti;Lilangeni;Metical;Dalasi;Leone;Ariary;Ouguiya;Nakfa;Paʻanga/Paanga;Tala;Vatu;Kina;Rufiyaa;Tögrög/Tugrik/Togrog;Pataca;Escudo;Denar;Convertible mark/Mark`,
+85:`Kuna;Peseta;Drachma;Deutsche Mark;Guilder;Florin;Ducat;Doubloon;Sestertius;Piastre/Piaster;Farthing;Groat`,
+100:`Ngultrum`},
+n:"Bhutan's currency, pegged one-to-one to the Indian rupee."},
+
+{c:"Games",q:"Name a board game",t:{
+10:`Monopoly;Chess;Scrabble;Checkers/Draughts;Clue/Cluedo;Risk;The Game of Life/Life/Game of Life`,
+25:`Sorry!;Trouble;Catan/Settlers of Catan;Battleship;Connect Four/Connect 4;Backgammon;Candy Land/Candyland;Snakes and Ladders/Chutes and Ladders;Mouse Trap;Operation;Stratego;Othello/Reversi;Pictionary;Trivial Pursuit;Guess Who?;Ticket to Ride;Pandemic;Go/Weiqi/Baduk;Mancala;Ludo/Parcheesi;Boggle;Taboo`,
+50:`Carcassonne;Azul;Codenames;Dominion;Wingspan;Splendor;7 Wonders/Seven Wonders;Puerto Rico;Agricola;Terraforming Mars;Gloomhaven;Twilight Imperium;Power Grid;King of Tokyo;Dixit;Small World;Betrayal at House on the Hill;Axis & Allies;Diplomacy;Acquire;Cranium;Balderdash;Hungry Hungry Hippos;Sequence;Rummikub;Blokus;Chinese Checkers;Mastermind;Shogi;Xiangqi/Chinese chess;Nine Men's Morris;Cribbage;Yahtzee`,
+85:`Brass: Birmingham/Brass Birmingham/Brass;Spirit Island;Root;Scythe;Everdell;Arkham Horror;War of the Ring;Through the Ages;Hive;Tigris & Euphrates;El Grande;Tzolk'in;Caylus;Le Havre;Gomoku;Hnefatafl;Senet`,
+100:`Royal Game of Ur/Game of Ur/Ur`},
+n:"Played in Mesopotamia about 4,500 years ago. Its rules were pieced back together from a cuneiform tablet."},
+
+{c:"Tech",q:"Name a programming language",t:{
+10:`Python;Java;JavaScript/JS;C;C++/CPP;C#/C Sharp`,
+25:`Ruby;PHP;Swift;Go/Golang;Rust;Kotlin;TypeScript/TS;SQL;R;Perl;MATLAB;Scala;Visual Basic/VB/VBA;Assembly/ASM;Bash/Shell;Objective-C/ObjC;Dart;Lua`,
+50:`Haskell;Lisp/Common Lisp;Fortran;COBOL;Pascal;Delphi;Erlang;Elixir;Clojure;F#/F Sharp;Julia;Groovy;Prolog;Scheme;BASIC;Ada;Smalltalk;OCaml;Zig;Nim;Crystal;Racket;PowerShell;Solidity;APL;Scratch;Logo;D;VB.NET`,
+85:`Brainf*ck/Brainfuck;Forth;Simula;ALGOL;J;K;Q;Befunge;Whitespace;LOLCODE;Chapel;Idris;Agda;Coq/Rocq;Elm;PureScript;Raku;Tcl;AWK;SNOBOL;PL-I/PL1;Rexx;Modula-2;Oberon;Eiffel;Hack;Vala;Odin;Carbon;Mojo;Gleam;Roc`,
+100:`Malbolge`},
+n:"Designed in 1998 to be as hard to program in as possible. The first working program took two years to appear."},
+
+{c:"Nature",q:"Name a gemstone",t:{
+10:`Diamond;Ruby;Emerald;Sapphire;Pearl`,
+25:`Amethyst;Topaz;Opal;Jade;Garnet;Aquamarine;Turquoise;Onyx;Quartz;Peridot;Citrine;Amber;Jasper`,
+50:`Tourmaline;Tanzanite;Lapis lazuli/Lapis;Moonstone;Alexandrite;Zircon;Spinel;Agate;Obsidian;Malachite;Bloodstone;Morganite;Tiger's eye/Tigers eye;Carnelian;Coral;Jet;Kunzite;Chrysoberyl;Iolite;Labradorite;Sunstone;Rose quartz;Smoky quartz;Beryl`,
+85:`Benitoite;Taaffeite;Grandidierite;Musgravite;Red beryl/Bixbite;Jeremejevite;Poudretteite;Serendibite;Demantoid;Tsavorite;Sphene/Titanite;Kyanite;Andalusite;Chrysoprase;Rhodochrosite;Larimar;Ammolite;Sugilite;Charoite;Hiddenite;Padparadscha`,
+100:`Painite`},
+n:"Once listed by Guinness as the rarest mineral on Earth: in the 1950s only one crystal was known."},
+
+{c:"Food",q:"Name a herb or spice",t:{
+10:`Black pepper/Pepper/Peppercorn;Basil;Cinnamon;Oregano;Garlic;Ginger;Paprika;Parsley`,
+25:`Rosemary;Thyme;Cumin;Nutmeg;Mint/Peppermint/Spearmint;Dill;Cilantro/Coriander;Turmeric;Chili powder/Chili/Chilli;Cayenne/Cayenne pepper;Sage;Bay leaf/Bay leaves/Bay;Cloves/Clove;Vanilla;Saffron;Mustard/Mustard seed;Chives;Allspice;Cardamom;Tarragon;Marjoram;Curry powder`,
+50:`Fennel seed/Fennel;Star anise;Anise/Aniseed;Fenugreek;Sumac;Za'atar;Garam masala;Five spice/Chinese five spice;Mace;Caraway;Celery seed;Lemongrass;Galangal;Juniper/Juniper berries;Smoked paprika;White pepper;Sichuan pepper/Szechuan pepper;Lavender;Chervil;Lovage;Savory;Horseradish;Wasabi;Sesame/Sesame seeds;Poppy seed/Poppy seeds;Nigella/Kalonji/Black seed;Asafoetida/Hing;Ajwain/Carom;Annatto/Achiote;Epazote;Makrut lime leaf/Kaffir lime leaf/Lime leaf;Curry leaf/Curry leaves;Pink peppercorn;Herbes de Provence;Ras el hanout;Berbere;Baharat;Dukkah`,
+85:`Long pepper;Amchur/Amchoor/Mango powder;Mahlab/Mahleb;Sansho;Cubeb;Borage;Hyssop;Rue;Angelica;Licorice root/Liquorice;Orris root;Filé powder/Sassafras;Black lime/Loomi;Kokum;Anardana;Shiso/Perilla;Culantro;Wattleseed;Mastic`,
+100:`Grains of paradise`},
+n:"A peppery West African seed, sold in medieval Europe as a pricey substitute for black pepper."},
+
+{c:"Art",q:"Name a famous painter",t:{
+10:`Pablo Picasso/Picasso;Vincent van Gogh/Van Gogh;Leonardo da Vinci/Da Vinci/Leonardo;Claude Monet/Monet;Michelangelo;Rembrandt`,
+25:`Salvador Dalí/Dali;Andy Warhol/Warhol;Frida Kahlo/Kahlo/Frida;Henri Matisse/Matisse;Pierre-Auguste Renoir/Renoir;Paul Cézanne/Cezanne;Raphael;Johannes Vermeer/Vermeer;Jackson Pollock/Pollock;Edvard Munch/Munch;Gustav Klimt/Klimt;Edgar Degas/Degas;Sandro Botticelli/Botticelli;Caravaggio;Francisco Goya/Goya;Georgia O'Keeffe/O'Keeffe;Edward Hopper/Hopper;Bob Ross;Banksy;Mark Rothko/Rothko;René Magritte/Magritte;Wassily Kandinsky/Kandinsky;Édouard Manet/Manet;Paul Gauguin/Gauguin;Georges Seurat/Seurat;Peter Paul Rubens/Rubens;El Greco;J. M. W. Turner/Turner;John Constable/Constable;Titian;Jean-Michel Basquiat/Basquiat;Keith Haring/Haring;Roy Lichtenstein/Lichtenstein;Norman Rockwell/Rockwell`,
+50:`Diego Velázquez/Velazquez;Albrecht Dürer/Durer;Hieronymus Bosch/Bosch;Pieter Bruegel/Bruegel/Brueghel;Hans Holbein/Holbein;Tintoretto;Giotto;Piet Mondrian/Mondrian;Joan Miró/Miro;Marc Chagall/Chagall;Paul Klee/Klee;Amedeo Modigliani/Modigliani;Henri de Toulouse-Lautrec/Toulouse-Lautrec;Camille Pissarro/Pissarro;Mary Cassatt/Cassatt;Berthe Morisot/Morisot;Winslow Homer/Homer;John Singer Sargent/Sargent;Andrew Wyeth/Wyeth;Willem de Kooning/De Kooning;David Hockney/Hockney;Francis Bacon/Bacon;Lucian Freud/Freud;Egon Schiele/Schiele;Katsushika Hokusai/Hokusai;Utagawa Hiroshige/Hiroshige;Diego Rivera/Rivera;Eugène Delacroix/Delacroix;Jean-Auguste-Dominique Ingres/Ingres;Gustave Courbet/Courbet;Jean-François Millet/Millet;Thomas Gainsborough/Gainsborough;William Blake/Blake;Dante Gabriel Rossetti/Rossetti;John William Waterhouse/Waterhouse;Kazimir Malevich/Malevich;Gerhard Richter/Richter;Yayoi Kusama/Kusama;Cy Twombly/Twombly;Robert Rauschenberg/Rauschenberg;Jasper Johns;Helen Frankenthaler/Frankenthaler;James McNeill Whistler/Whistler;Alfred Sisley/Sisley`,
+85:`Artemisia Gentileschi/Gentileschi;Hilma af Klint/af Klint;Élisabeth Vigée Le Brun/Vigee Le Brun;Gustave Caillebotte/Caillebotte;Joaquín Sorolla/Sorolla;Francisco de Zurbarán/Zurbaran;Georges de La Tour;Jean-Siméon Chardin/Chardin;Caspar David Friedrich/Friedrich;Vilhelm Hammershøi/Hammershoi;Félix Vallotton/Vallotton;Pierre Bonnard/Bonnard;Odilon Redon/Redon;James Ensor/Ensor;Ilya Repin/Repin`,
+100:`Ivan Aivazovsky/Aivazovsky`},
+n:"Painted around 6,000 works, nearly all of them the sea, mostly from memory."},
+
+{c:"Animals",q:"Name a bird that can't fly",t:{
+10:`Penguin;Ostrich;Emu;Kiwi;Dodo`,
+25:`Cassowary;Rhea;Kakapo/Kākāpō;Emperor penguin;King penguin`,
+50:`Takahē/Takahe;Weka;Flightless cormorant/Galápagos cormorant;Great auk;Moa;Elephant bird;Inaccessible Island rail;Adélie penguin/Adelie penguin;Gentoo penguin;Chinstrap penguin;Rockhopper penguin;Macaroni penguin;Little penguin/Fairy penguin/Little blue penguin;African penguin;Humboldt penguin;Magellanic penguin;Galápagos penguin/Galapagos penguin;Yellow-eyed penguin;Steamer duck`,
+85:`Terror bird/Phorusrhacid;Titanis;Auckland teal/Auckland Islands teal;Campbell teal;Lord Howe woodhen;Kagu;Aptornis;Dromornis;Gastornis;Okinawa rail`,
+100:`Rodrigues solitaire/Solitaire`},
+n:"A turkey-sized relative of the dodo from Rodrigues island, extinct by the 1760s."},
+
+{c:"Weather",q:"Name a type of cloud",t:{
+10:`Cumulus;Stratus;Cirrus;Cumulonimbus/Thunderhead`,
+25:`Nimbostratus;Altostratus;Altocumulus;Cirrostratus;Cirrocumulus;Stratocumulus;Nimbus;Fog;Contrail`,
+50:`Mammatus;Lenticular;Shelf cloud/Arcus;Wall cloud;Noctilucent;Nacreous/Polar stratospheric;Pileus;Castellanus;Fractus;Roll cloud;Funnel cloud;Pyrocumulus;Kelvin-Helmholtz/Fluctus;Asperitas;Cumulus congestus/Congestus;Anvil/Incus;Virga`,
+85:`Morning Glory;Undulatus;Velum;Pannus;Tuba;Murus;Cauda;Flammagenitus;Homogenitus;Cataractagenitus;Volutus;Fallstreak hole/Hole punch cloud/Cavum`,
+100:`Silvagenitus`},
+n:"A cloud made from moisture breathed out by forests. Officially named by the World Meteorological Organization in 2017."},
+
+{c:"Books",q:"Name a Harry Potter character",t:{
+10:`Harry Potter/Harry;Hermione Granger/Hermione;Ron Weasley/Ron;Albus Dumbledore/Dumbledore;Lord Voldemort/Voldemort/Tom Riddle/You-Know-Who;Severus Snape/Snape;Rubeus Hagrid/Hagrid;Draco Malfoy/Draco/Malfoy`,
+25:`Ginny Weasley/Ginny;Fred Weasley/Fred;George Weasley/George;Neville Longbottom/Neville;Luna Lovegood/Luna;Sirius Black/Sirius;Remus Lupin/Lupin;Minerva McGonagall/McGonagall;Dobby;Bellatrix Lestrange/Bellatrix;Lucius Malfoy/Lucius;Cedric Diggory/Cedric;Cho Chang;Dudley Dursley/Dudley;Vernon Dursley/Uncle Vernon;Petunia Dursley/Aunt Petunia;Molly Weasley/Mrs Weasley;Arthur Weasley/Mr Weasley;Percy Weasley/Percy;Dolores Umbridge/Umbridge;Mad-Eye Moody/Alastor Moody/Moody;Peter Pettigrew/Wormtail;Hedwig;Gilderoy Lockhart/Lockhart;Quirinus Quirrell/Quirrell;Nymphadora Tonks/Tonks;Fawkes;Kreacher;Nagini;Buckbeak;Crookshanks;Scabbers;Fluffy;Aragog;Horace Slughorn/Slughorn;Gellert Grindelwald/Grindelwald;Fleur Delacour/Fleur;Viktor Krum/Krum;James Potter;Lily Potter;Argus Filch/Filch;Moaning Myrtle/Myrtle;Bill Weasley/Bill;Charlie Weasley/Charlie;Sybill Trelawney/Trelawney`,
+50:`Mrs Norris;Peeves;Nearly Headless Nick/Sir Nicholas;Seamus Finnigan/Seamus;Dean Thomas;Lavender Brown;Vincent Crabbe/Crabbe;Gregory Goyle/Goyle;Pansy Parkinson/Pansy;Pomona Sprout/Professor Sprout/Sprout;Filius Flitwick/Flitwick;Kingsley Shacklebolt/Kingsley;Cornelius Fudge/Fudge;Rufus Scrimgeour/Scrimgeour;Griphook;Garrick Ollivander/Ollivander;Aberforth Dumbledore/Aberforth;Rita Skeeter;Barty Crouch/Barty Crouch Jr/Bartemius Crouch;Winky;Xenophilius Lovegood/Xenophilius;Oliver Wood;Colin Creevey;Madam Pomfrey/Poppy Pomfrey;Madam Hooch/Rolanda Hooch;Firenze;Grawp;Fenrir Greyback/Greyback;Regulus Black/Regulus;Narcissa Malfoy/Narcissa;Mundungus Fletcher/Mundungus;Arabella Figg/Mrs Figg;Cormac McLaggen;Ernie Macmillan;Hannah Abbott;Katie Bell;Angelina Johnson;Lee Jordan;Blaise Zabini;Scorpius Malfoy;Albus Severus Potter;Teddy Lupin;Andromeda Tonks;Ariana Dumbledore;Bathilda Bagshot;Professor Binns/Binns;Madam Pince/Irma Pince;Stan Shunpike`,
+85:`Merope Gaunt;Morfin Gaunt;Marvolo Gaunt;Hepzibah Smith;Amycus Carrow;Alecto Carrow;Antonin Dolohov/Dolohov;Augustus Rookwood/Rookwood;Corban Yaxley/Yaxley;Rabastan Lestrange;Rodolphus Lestrange;Phineas Nigellus Black/Phineas Nigellus;Walburga Black;Bogrod;Kendra Dumbledore;Mafalda Hopkirk;Elphias Doge;Amelia Bones;Susan Bones;Gregorovitch;Ignotus Peverell;Justin Finch-Fletchley;Zacharias Smith;Dennis Creevey;Romilda Vane;Marcus Flint;Theodore Nott;Millicent Bulstrode;Dedalus Diggle;Ted Tonks;Dirk Cresswell`,
+100:`Ernie Prang`},
+n:"The elderly, thick-spectacled driver of the Knight Bus."},
+
+{c:"Music",q:"Name a Beatles song",t:{
+10:`Hey Jude;Yesterday;Let It Be;Here Comes the Sun;Yellow Submarine;All You Need Is Love;Twist and Shout;Help!`,
+25:`Come Together;Something;Eleanor Rigby;I Want to Hold Your Hand;Strawberry Fields Forever/Strawberry Fields;Penny Lane;A Day in the Life;Blackbird;In My Life;Love Me Do;She Loves You;A Hard Day's Night;Ticket to Ride;Lucy in the Sky with Diamonds;Hello, Goodbye;Get Back;Revolution;Ob-La-Di, Ob-La-Da/Obladi Oblada;I Saw Her Standing There;While My Guitar Gently Weeps;Can't Buy Me Love;All My Loving;Eight Days a Week;Norwegian Wood;With a Little Help from My Friends;Sgt. Pepper's Lonely Hearts Club Band/Sgt Pepper;The Long and Winding Road;Across the Universe;I Am the Walrus;Drive My Car;Nowhere Man;Paperback Writer;Day Tripper;We Can Work It Out;Back in the U.S.S.R./Back in the USSR;Helter Skelter;Michelle;Here, There and Everywhere;Now and Then`,
+50:`Octopus's Garden/Octopuses Garden;Dear Prudence;Golden Slumbers;Carry That Weight;The End;I Feel Fine;Please Please Me;From Me to You;All Together Now;Magical Mystery Tour;Got to Get You into My Life;Taxman;Tomorrow Never Knows;Rain;Julia;Girl;If I Fell;And I Love Her;You've Got to Hide Your Love Away;Good Day Sunshine;I Want You (She's So Heavy)/I Want You;Maxwell's Silver Hammer;Oh! Darling;Because;Sun King;Mean Mr. Mustard;Polythene Pam;She Came In Through the Bathroom Window;Two of Us;Don't Let Me Down;The Ballad of John and Yoko;Hey Bulldog;Birthday;Rocky Raccoon;Glass Onion;When I'm Sixty-Four/When I'm 64;Being for the Benefit of Mr. Kite!/Mr Kite;Getting Better;Fixing a Hole;She's Leaving Home;Lovely Rita;Free as a Bird;Real Love;I'm Only Sleeping;Things We Said Today;No Reply;I'll Follow the Sun;Run for Your Life;Think for Yourself;You Won't See Me;I'm Looking Through You;For No One;Doctor Robert;And Your Bird Can Sing;She Said She Said;Within You Without You;Good Morning Good Morning;Martha My Dear;Sexy Sadie;Happiness Is a Warm Gun;Mother Nature's Son;Baby, You're a Rich Man;The Continuing Story of Bungalow Bill/Bungalow Bill`,
+85:`Revolution 9;Piggies;Savoy Truffle;Honey Pie;Cry Baby Cry;Good Night;Yer Blues;I Will;Long, Long, Long;Dig a Pony;I've Got a Feeling;One After 909;For You Blue;I Me Mine;Old Brown Shoe;Only a Northern Song;It's All Too Much;Her Majesty;The Word;Wait;What Goes On;Love You To;Dig It;Maggie Mae;Why Don't We Do It in the Road?;Everybody's Got Something to Hide Except Me and My Monkey;Flying;Blue Jay Way;Your Mother Should Know;Not a Second Time;Hold Me Tight;Little Child;Don't Bother Me;Tell Me Why;I'll Cry Instead;Every Little Thing;Another Girl;You Like Me Too Much;Tell Me What You See;Yes It Is;You Know My Name (Look Up the Number)/You Know My Name;The Inner Light`,
+100:`Wild Honey Pie`},
+n:"53 seconds long, recorded by Paul McCartney alone for the White Album."},
+
+{c:"Film",q:"Name a Walt Disney Animation Studios film",t:{
+10:`The Lion King;Frozen;Aladdin;The Little Mermaid;Beauty and the Beast;Snow White and the Seven Dwarfs/Snow White;Cinderella`,
+25:`Moana;Tangled;Mulan;Bambi;Dumbo;Pinocchio;Fantasia;Peter Pan;Sleeping Beauty;Lady and the Tramp;One Hundred and One Dalmatians/101 Dalmatians;The Jungle Book;Pocahontas;Hercules;Tarzan;Lilo & Stitch;Zootopia/Zootropolis;Frozen II/Frozen 2;Encanto;Wreck-It Ralph;Big Hero 6;The Princess and the Frog;Alice in Wonderland;The Aristocats;Robin Hood;The Hunchback of Notre Dame;Bolt;Wish;Raya and the Last Dragon;Moana 2;Zootopia 2`,
+50:`The Fox and the Hound;The Rescuers;The Rescuers Down Under;Oliver & Company;The Great Mouse Detective;The Emperor's New Groove;Atlantis: The Lost Empire/Atlantis;Treasure Planet;Brother Bear;Home on the Range;Chicken Little;Meet the Robinsons;Winnie the Pooh;The Many Adventures of Winnie the Pooh;The Sword in the Stone;The Black Cauldron;Ralph Breaks the Internet;Strange World;Fantasia 2000;Dinosaur;Saludos Amigos;The Three Caballeros`,
+85:`Make Mine Music;Fun and Fancy Free;The Adventures of Ichabod and Mr. Toad/Ichabod and Mr Toad`,
+100:`Melody Time`},
+n:"A 1948 package film of seven musical shorts, including Johnny Appleseed and Pecos Bill."},
+
+{c:"Geography",q:"Name a country that borders China",t:{
+10:`India;Russia;North Korea;Mongolia`,
+25:`Vietnam;Pakistan;Nepal;Afghanistan;Kazakhstan;Myanmar/Burma;Laos`,
+50:`Bhutan`,
+85:`Kyrgyzstan`,
+100:`Tajikistan`},
+n:"China shares borders with 14 countries, tied with Russia for the most of any nation."},
+
+{c:"Film",q:"Name an actor who played James Bond (1954–2021)",t:{
+10:`Sean Connery/Connery;Daniel Craig/Craig;Pierce Brosnan/Brosnan;Roger Moore/Moore`,
+25:`Timothy Dalton/Dalton`,
+50:`George Lazenby/Lazenby`,
+85:`David Niven/Niven`,
+100:`Barry Nelson/Nelson`},
+n:"The first screen Bond: an American 'Jimmy Bond' in a live 1954 TV version of Casino Royale."},
+
+{c:"History",q:"Name one of the Seven Wonders, ancient or new",t:{
+10:`Great Wall of China/Great Wall;Great Pyramid of Giza/Pyramids of Giza/Great Pyramid/Pyramids/Pyramid;Taj Mahal;Colosseum/Coliseum`,
+25:`Machu Picchu;Christ the Redeemer;Petra;Chichén Itzá/Chichen Itza;Hanging Gardens of Babylon/Hanging Gardens;Colossus of Rhodes/Colossus`,
+50:`Lighthouse of Alexandria/Pharos of Alexandria/Pharos;Statue of Zeus at Olympia/Statue of Zeus`,
+85:`Temple of Artemis at Ephesus/Temple of Artemis`,
+100:`Mausoleum at Halicarnassus/Mausoleum of Halicarnassus/Mausoleum`},
+n:"The tomb of King Mausolus, so grand that every 'mausoleum' since is named after it."},
+
+{c:"Ocean",q:"Name a part of a ship or boat",t:{
+10:`Anchor;Sail;Deck;Hull;Mast;Rudder`,
+25:`Bow;Stern;Keel;Port;Starboard;Cabin;Bridge;Propeller/Screw;Galley;Crow's nest;Helm;Porthole;Ship's wheel/Wheel;Oar;Lifeboat;Gangplank/Gangway;Hatch;Bilge;Bulkhead;Boom;Rigging;Hold/Cargo hold;Engine room;Cockpit`,
+50:`Bowsprit;Transom;Gunwale;Forecastle/Fo'c'sle;Poop deck;Quarterdeck;Figurehead;Capstan;Windlass;Ballast;Berth;Brig;Davit;Hawsehole;Scupper;Cleat;Bollard;Tiller;Centerboard/Daggerboard;Jib;Spinnaker;Mainsail;Halyard;Sheet;Shroud;Stay;Yardarm/Yard;Spar;Binnacle;Mess;Head;Stanchion;Fender;Bulwark;Waterline;Plimsoll line/Load line;Crosstrees;Chart room`,
+85:`Bitt;Hawsepipe;Chine;Strake;Garboard;Deadeye;Ratline/Ratlines;Cathead;Taffrail;Orlop deck/Orlop;Sponson;Lazarette;Chain locker;Skeg;Bilge keel;Bulbous bow;Bow thruster/Thruster;Fairlead;Gudgeon;Pintle;Spurling pipe`,
+100:`Futtock`},
+n:"One of the curved timbers that make up a wooden ship's ribs."},
+
+{c:"Geography",q:"Name a country that starts with S",t:{
+10:`Spain;Sweden;Switzerland;South Africa;South Korea;Saudi Arabia`,
+25:`Singapore;Sri Lanka;Sudan;Syria;Somalia;Senegal;Serbia;Slovakia;Slovenia;South Sudan`,
+50:`Sierra Leone;Suriname;San Marino;Seychelles;Scotland;Samoa;Solomon Islands`,
+85:`Saint Lucia/St Lucia;Saint Kitts and Nevis/St Kitts and Nevis/St Kitts;Saint Vincent and the Grenadines/St Vincent;Swaziland`,
+100:`São Tomé and Príncipe/Sao Tome and Principe/Sao Tome`},
+n:"Africa's second-smallest country: two volcanic islands sitting almost on the equator."},
+
+{c:"Ocean",q:"Name a kind of whale, dolphin or porpoise",t:{
+10:`Blue whale;Orca/Killer whale;Humpback whale/Humpback;Bottlenose dolphin;Beluga/Beluga whale`,
+25:`Sperm whale;Narwhal;Gray whale/Grey whale;Minke whale/Minke;Fin whale/Finback;Right whale;Bowhead whale/Bowhead;Pilot whale;Spinner dolphin;Harbor porpoise/Harbour porpoise/Porpoise`,
+50:`Sei whale;Bryde's whale;Cuvier's beaked whale/Beaked whale;Risso's dolphin;Dusky dolphin;Common dolphin;Striped dolphin;Spotted dolphin;Amazon river dolphin/Boto/Pink river dolphin/River dolphin;Vaquita;False killer whale;Melon-headed whale;Pygmy sperm whale;Dwarf sperm whale;Hector's dolphin;Commerson's dolphin;Irrawaddy dolphin;Pacific white-sided dolphin/White-sided dolphin;Rough-toothed dolphin;Dall's porpoise;Baiji/Yangtze river dolphin;Northern bottlenose whale`,
+85:`Omura's whale;Pygmy right whale;Baird's beaked whale;Sowerby's beaked whale;Strap-toothed whale;Tucuxi;Franciscana;Finless porpoise;Burmeister's porpoise;Spectacled porpoise;Fraser's dolphin;Clymene dolphin;Heaviside's dolphin;Chilean dolphin;Hourglass dolphin;Peale's dolphin;Atlantic humpback dolphin`,
+100:`Spade-toothed whale/Spade-toothed beaked whale`},
+n:"The rarest whale known. Never seen alive: identified from a few bones and two bodies that washed ashore."},
+
+{c:"Food",q:"Name a fish people eat",t:{
+10:`Salmon;Tuna;Cod;Tilapia;Trout;Catfish`,
+25:`Halibut;Mackerel;Sardine/Sardines;Anchovy/Anchovies;Swordfish;Mahi-mahi/Dorado;Snapper/Red snapper;Sea bass;Haddock;Herring;Flounder;Sole;Pollock/Pollack;Bass;Carp;Perch;Grouper;Eel`,
+50:`Monkfish;Branzino/European sea bass;Mullet;Pike;Walleye;Arctic char/Char;Sturgeon;Turbot;Plaice;Whiting;Hake;John Dory;Barramundi;Cobia;Wahoo;Yellowtail/Hamachi;Skate;Sablefish/Black cod;Orange roughy;Opah;Pompano;Shad;Smelt;Sprat/Sprats;Bonito;Amberjack;Tilefish;Rockfish;Lingcod;Kingfish;Milkfish;Swai/Basa/Pangasius;Sea bream/Bream;Lionfish`,
+85:`Fugu/Pufferfish/Puffer fish;Lamprey;Gar;Pickerel;Burbot;Snoek;Hilsa;Rohu;Pomfret;Wolffish;Cusk;Scup;Croaker;Red drum/Redfish/Drum;Sheepshead;Triggerfish;Parrotfish`,
+100:`Bombay duck`},
+n:"Not a duck at all: a lizardfish, often dried and fried in India."}
+];
+
+/* ================= CONFIG ================= */
+const ROUND=60, PENALTY=2, PROMPTS=5, SHELF=12;
+const LIVE_MIN=5;   // beta: grades go live at 5 collectors (matches curio_board in supabase-curio.sql); 20 for launch
+const EPOCH=Date.UTC(2026,9,27);   // drawer No. 1
+const SUPA={url:"https://ckymkwobaiibznpmvbjd.supabase.co",key:"sb_publishable_LIfnSmZwQd8UoC007ML3eg_n5kfZ6-l"};
+const TIERS={
+  common:{label:"Common",pts:10,sq:"⬜",rank:1},
+  scarce:{label:"Scarce",pts:25,sq:"🟩",rank:2},
+  rare:{label:"Rare",pts:50,sq:"🟦",rank:3},
+  remarkable:{label:"Remarkable",pts:85,sq:"🟪",rank:4},
+  singular:{label:"Singular",pts:100,sq:"🟨",rank:5}
+};
+const curatedTier=p=>p>=100?"singular":p>=85?"remarkable":p>=50?"rare":p>=25?"scarce":"common";
+function liveTier(n,players){
+  if(!players||players<LIVE_MIN) return null;
+  const pct=n/players;
+  if(n<=1) return "singular";
+  if(pct<=.01) return "remarkable";
+  if(pct<=.05) return "rare";
+  if(pct<=.20) return "scarce";
+  return "common";
+}
+
+/* ================= UTILITIES ================= */
+const $=s=>document.querySelector(s);
+const esc=s=>String(s).replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+const fmt=n=>Math.round(n).toLocaleString("en-US");
+const store={
+  get(k,d){try{const v=localStorage.getItem(k);return v==null?d:JSON.parse(v)}catch(e){return d}},
+  set(k,v){try{localStorage.setItem(k,JSON.stringify(v))}catch(e){}}
+};
+const reduced=matchMedia("(prefers-reduced-motion: reduce)").matches;
+const dayNo=()=>Math.max(1,Math.floor((Date.now()-EPOCH)/864e5)+1);
+function rngFrom(seed){let a=seed>>>0;return()=>{a|=0;a=a+0x6D2B79F5|0;let t=Math.imul(a^a>>>15,1|a);t=t+Math.imul(t^t>>>7,61|t)^t;return((t^t>>>14)>>>0)/4294967296}}
+function shuffle(arr,r=Math.random){for(let i=arr.length-1;i>0;i--){const j=Math.floor(r()*(i+1));[arr[i],arr[j]]=[arr[j],arr[i]]}return arr}
+
+/* answer matching: accents, plurals, articles, small typos */
+function norm(s){
+  return String(s).toLowerCase().normalize("NFD").replace(/[̀-ͯ]/g,"")
+    .replace(/&/g," and ").replace(/\+/g,"plus").replace(/#/g,"sharp")
+    .trim().replace(/^(the|a|an)\s+/,"").replace(/[^a-z0-9]/g,"");
+}
+function prep(p){
+  if(p.idx) return p;
+  p.entries=[];p.idx=new Map();
+  for(const pts of [10,25,50,85,100]){
+    const raw=p.t[pts]; if(!raw) continue;
+    for(const item of raw.split(";")){
+      const al=item.split("/").map(s=>s.trim()).filter(Boolean); if(!al.length) continue;
+      const e={name:al[0],pts}; p.entries.push(e);
+      for(const a of al){const k=norm(a); if(k&&!p.idx.has(k)) p.idx.set(k,e)}
+    }
+  }
+  return p;
+}
+function lev(a,b){
+  let prev=Array.from({length:b.length+1},(_,j)=>j);
+  for(let i=1;i<=a.length;i++){const cur=[i];for(let j=1;j<=b.length;j++) cur[j]=Math.min(prev[j]+1,cur[j-1]+1,prev[j-1]+(a[i-1]===b[j-1]?0:1));prev=cur}
+  return prev[b.length];
+}
+function matchAnswer(p,input){
+  const n=norm(input); if(!n) return null;
+  const idx=prep(p).idx;
+  if(idx.has(n)) return idx.get(n);
+  for(const v of [n+"s",n+"es",n.replace(/ies$/,"y"),n.replace(/es$/,""),n.replace(/s$/,"")]) if(v!==n&&idx.has(v)) return idx.get(v);
+  if(n.length<5) return null;
+  const lim=n.length>=9?2:1; let best=null,bd=99,tie=false;
+  for(const [k,e] of idx){
+    if(k.length<5||Math.abs(k.length-n.length)>lim) continue;
+    const d=lev(k,n);
+    if(d<bd){bd=d;best=e;tie=false} else if(d===bd&&e!==best) tie=true;
+  }
+  return bd<=lim&&!tie?best:null;
+}
+
+/* ================= SPECIMEN GLYPHS (one per field) ================= */
+const G={
+  Geography:'<circle cx="12" cy="12" r="9"/><ellipse cx="12" cy="12" rx="4" ry="9"/><path d="M3 12h18M5 7h14M5 17h14"/>',
+  Space:'<circle cx="12" cy="12" r="5"/><ellipse cx="12" cy="12" rx="11" ry="3.6" transform="rotate(-20 12 12)"/>',
+  Science:'<path d="M9 3h6M10 3v6l-5.5 9.5A2 2 0 0 0 6.2 21h11.6a2 2 0 0 0 1.7-2.5L14 9V3"/><path d="M7 15h10"/>',
+  Myth:'<path d="M4 5h16M6 8h12M8 8v10M12 8v10M16 8v10M4 21h16M5 18h14"/>',
+  Literature:'<path d="M4 4h6a3 3 0 0 1 3 3v13a2 2 0 0 0-2-2H4zM20 4h-6a3 3 0 0 0-3 3"/><path d="M20 4v14h-7"/>',
+  Books:'<path d="M5 4h11l3 3v13H5z"/><path d="M8 9h8M8 13h8M8 17h5"/>',
+  Film:'<circle cx="12" cy="12" r="9"/><circle cx="12" cy="7" r="1.8"/><circle cx="12" cy="17" r="1.8"/><circle cx="7" cy="12" r="1.8"/><circle cx="17" cy="12" r="1.8"/><circle cx="12" cy="12" r=".6"/>',
+  Sport:'<circle cx="12" cy="12" r="9"/><path d="M3.5 9c4 1 13 1 17 0M3.5 15c4-1 13-1 17 0M12 3v18"/>',
+  Body:'<path d="M8.5 8.5l7 7"/><circle cx="6.5" cy="5.5" r="2"/><circle cx="5.5" cy="8.5" r="2"/><circle cx="17.5" cy="18.5" r="2"/><circle cx="18.5" cy="15.5" r="2"/>',
+  Nature:'<path d="M5 20C5 11 11 5 20 4c-1 9-6 16-15 16z"/><path d="M5 20l9-9"/>',
+  Ocean:'<path d="M12 4c3 3 6 5 6 9a6 6 0 0 1-12 0c0-4 3-6 6-9z"/><path d="M9 14c1 1.5 2 2 3 2"/>',
+  Food:'<path d="M3 11h18a9 7 0 0 1-18 0z"/><path d="M9 7c0-2 2-2 2-4M14 7c0-2 2-2 2-4"/>',
+  Animals:'<circle cx="7" cy="9" r="2"/><circle cx="12" cy="6" r="2"/><circle cx="17" cy="9" r="2"/><path d="M8 17c0-3 2-5 4-5s4 2 4 5-2 3-4 3-4 0-4-3z"/>',
+  Music:'<path d="M9 18V5l10-2v13"/><circle cx="6.5" cy="18" r="2.5"/><circle cx="16.5" cy="16" r="2.5"/>',
+  History:'<path d="M7 3h10M7 21h10M8 3c0 5 8 6 8 9s-8 4-8 9M16 3c0 5-8 6-8 9s8 4 8 9"/>',
+  Money:'<circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="6"/><path d="M12 9v6M10 10.5h3a1.5 1.5 0 0 1 0 3h-3"/>',
+  Games:'<rect x="4" y="4" width="16" height="16" rx="2"/><circle cx="8.5" cy="8.5" r="1"/><circle cx="15.5" cy="15.5" r="1"/><circle cx="12" cy="12" r="1"/><circle cx="15.5" cy="8.5" r="1"/><circle cx="8.5" cy="15.5" r="1"/>',
+  Tech:'<path d="M8 7l-5 5 5 5M16 7l5 5-5 5M14 4l-4 16"/>',
+  Art:'<path d="M12 3a9 9 0 1 0 0 18c1.5 0 2-1 2-2s-1-2 0-3 4 1 6-2c1.5-2 .5-11-8-11z"/><circle cx="8" cy="10" r="1.2"/><circle cx="12" cy="7" r="1.2"/><circle cx="16" cy="10" r="1.2"/>',
+  Weather:'<path d="M7 18h10a4 4 0 0 0 .5-8A6 6 0 0 0 6 11.5 3.3 3.3 0 0 0 7 18z"/>'
+};
+const glyph=cat=>`<svg viewBox="0 0 24 24" aria-hidden="true">${G[cat]||'<path d="M12 3l2.6 5.6 6 .7-4.5 4 1.3 6L12 16.4 6.6 19.3l1.3-6-4.5-4 6-.7z"/>'}</svg>`;
+
+/* ================= SOUND ================= */
+let actx=null,muted=store.get("curio.mute",false);
+function ac(){if(!actx){try{actx=new(window.AudioContext||window.webkitAudioContext)()}catch(e){return null}} if(actx.state==="suspended") actx.resume(); return actx}
+function tone(freq,dur,type,vol,delay=0){
+  if(muted) return; const a=ac(); if(!a) return; const t=a.currentTime+delay;
+  const o=a.createOscillator(),g=a.createGain(); o.type=type; o.frequency.setValueAtTime(freq,t);
+  g.gain.setValueAtTime(.0001,t); g.gain.exponentialRampToValueAtTime(vol,t+.01); g.gain.exponentialRampToValueAtTime(.0001,t+dur);
+  o.connect(g).connect(a.destination); o.start(t); o.stop(t+dur+.02);
+}
+const clink=rank=>{tone(1320,.25,"triangle",.09); tone(1760+rank*90,.35,"triangle",.06,.07)};
+const thunk=()=>tone(140,.16,"square",.04);
+
+/* ================= STATE ================= */
+let S=null;
+const el={home:$("#home"),play:$("#play"),reveal:$("#reveal"),cabinet:$("#cabinet"),how:$("#how"),
+  guess:$("#guess"),form:$("#answerForm"),feedback:$("#feedback"),misses:$("#misses"),slots:$("#slots"),
+  card:$("#promptCard"),clock:$("#clock"),hand:$("#clockHand"),clockNum:$("#clockNum"),toast:$("#toast")};
+function show(id){for(const k of ["home","play","reveal","cabinet"]) el[k].hidden=k!==id; scrollTo({top:0})}
+const cabinet=()=>store.get("curio.cabinet",[]);
+function toast(msg){const t=el.toast; t.hidden=true; void t.offsetWidth; t.textContent=msg; t.hidden=false; clearTimeout(toast.t); toast.t=setTimeout(()=>t.hidden=true,2800)}
+
+/* ================= PROMPT BANK =================
+   Built by engine/build.py: data/schedule.json picks each day's five prompts,
+   data/catalog.json lists every prompt and its shard, data/bank/NN.json holds the answers.
+   If the files can't load, the built-in prompts above keep the game playable. */
+const BANK={schedule:null,catalog:null,byId:new Map(),shards:new Map()};
+const bankReady=(async()=>{
+  try{
+    const [s,c]=await Promise.all([fetch("data/schedule.json"),fetch("data/catalog.json")]);
+    if(!s.ok||!c.ok) throw 0;
+    BANK.schedule=await s.json(); BANK.catalog=await c.json();
+    for(const e of BANK.catalog) BANK.byId.set(e.id,e);
+  }catch(e){BANK.schedule=null; BANK.catalog=null}
+})();
+function shard(s){
+  if(!BANK.shards.has(s)) BANK.shards.set(s,fetch(`data/bank/${s}.json`).then(r=>r.ok?r.json():{}).catch(()=>({})));
+  return BANK.shards.get(s);
+}
+async function promptsFor(ids){
+  const out=[];
+  for(const id of ids){
+    const e=BANK.byId.get(id); if(!e) continue;
+    const obj=(await shard(e.s))[id];
+    if(obj) out.push(prep({...obj,id}));
+  }
+  return out;
+}
+function pickDistinct(list){
+  const out=[],cats=new Set();
+  for(const e of list){if(!cats.has(e.c)){out.push(e.id); cats.add(e.c)} if(out.length===PROMPTS) break}
+  return out;
+}
+const builtIn=r=>shuffle([...OPEN.keys()],r).slice(0,PROMPTS).map(i=>prep(OPEN[i]));
+async function dailyPrompts(day){
+  await bankReady;
+  const ids=BANK.schedule?.days?.[day-1];
+  if(ids){const ps=await promptsFor(ids); if(ps.length===PROMPTS) return ps}
+  if(BANK.catalog){const ps=await promptsFor(pickDistinct(shuffle(BANK.catalog.slice(),rngFrom(day*104729+7919)))); if(ps.length===PROMPTS) return ps}
+  return builtIn(rngFrom(day*104729+7919));
+}
+async function randomPrompts(){
+  await bankReady;
+  if(BANK.catalog){const ps=await promptsFor(pickDistinct(shuffle(BANK.catalog.slice()))); if(ps.length===PROMPTS) return ps}
+  return builtIn(Math.random);
+}
+
+/* ================= HOME ================= */
+function renderHome(){
+  const day=dayNo(),rec=store.get("curio.day."+day,null),cab=cabinet();
+  $("#railNo").textContent=`No. ${day}`;
+  $("#drawerNo").textContent=`Drawer No. ${day}`;
+  const ob=$("#openBtn");
+  if(rec){
+    $("#drawerName").textContent="Today's drawer is catalogued";
+    $("#drawerSub").textContent=`${rec.finds.filter(f=>f.name).length} of 5 specimens · ${fmt(drawerValue(rec))} cabinet value`;
+    ob.textContent="View today's specimens"; ob.dataset.act="viewday";
+    $("#todayBox").hidden=false;
+    $("#todayMini").innerHTML=rec.finds.map(f=>cardHTML(f)).join("");
+  }else{
+    $("#drawerName").textContent="Today's drawer";
+    $("#drawerSub").textContent="5 prompts · 60 seconds · opens once a day";
+    ob.textContent="Open today's drawer"; ob.dataset.act="daily";
+    $("#todayBox").hidden=true;
+  }
+  const shelves=shelfStats(cab);
+  $("#factSpecimens").textContent=fmt(cab.length);
+  $("#factShelves").textContent=fmt(shelves.filter(s=>s.unique>=SHELF).length);
+  const best=cab.reduce((m,c)=>Math.max(m,TIERS[c.tier]?.rank||0),0);
+  $("#factRarest").textContent=best?Object.values(TIERS).find(t=>t.rank===best).label:"—";
+  $("#cabChip").textContent=cab.length?`Cabinet ${cab.length}`:"Cabinet";
+  tickNext();
+  if(rec) refreshLive(day);
+}
+function tickNext(){
+  const now=new Date(),next=Date.UTC(now.getUTCFullYear(),now.getUTCMonth(),now.getUTCDate()+1);
+  const m=Math.max(0,Math.floor((next-now)/6e4));
+  $("#nextNote").textContent=`The next drawer opens in ${Math.floor(m/60)}h ${m%60}m (midnight UTC).`;
+}
+
+/* ================= PLAY ================= */
+let starting=false;
+async function startRound(mode){
+  ac();
+  const day=dayNo();
+  if(mode==="daily"&&store.get("curio.day."+day,null)) return viewDay(day);
+  if(starting) return; starting=true;
+  const btns=[...document.querySelectorAll('[data-act="daily"],[data-act="expedition"]')];
+  btns.forEach(b=>b.disabled=true);
+  let prompts;
+  try{prompts=mode==="daily"?await dailyPrompts(day):await randomPrompts()}
+  finally{starting=false; btns.forEach(b=>b.disabled=false)}
+  S={mode,day,prompts,i:0,left:ROUND,finds:[],misses:[],phase:"ask",last:0};
+  show("play"); renderSlots(); askPrompt();
+  S.last=performance.now(); requestAnimationFrame(tick);
+}
+function renderSlots(){
+  el.slots.innerHTML=S.prompts.map((p,i)=>{
+    const f=S.finds[i];
+    if(f&&f.name) return `<div class="slot got" style="--tc:var(--r-${f.tier})"><span>${esc(f.name)}</span></div>`;
+    if(f) return `<div class="slot miss">Escaped</div>`;
+    return `<div class="slot${i===S.i?" now":""}">${i===S.i?"Now":esc(p.c)}</div>`;
+  }).join("");
+}
+function askPrompt(){
+  const p=S.prompts[S.i];
+  $("#pCat").textContent=p.c; $("#pCount").textContent=`Prompt ${S.i+1} of ${PROMPTS}`;
+  $("#pText").textContent=p.q;
+  el.feedback.textContent=""; el.feedback.className="feedback"; el.misses.innerHTML=""; S.misses=[];
+  el.guess.value=""; el.guess.disabled=false;
+  el.card.classList.remove("in"); void el.card.offsetWidth; el.card.classList.add("in");
+  setTimeout(()=>el.guess.focus({preventScroll:true}),40);
+  renderSlots();
+}
+function tick(now){
+  if(!S||S.phase!=="ask") return;
+  const dt=Math.min(.1,(now-S.last)/1000); S.last=now;
+  if(el.how.hidden&&!document.hidden) S.left-=dt;
+  renderClock();
+  if(S.left<=0){S.left=0; return finishRound()}
+  requestAnimationFrame(tick);
+}
+function renderClock(){
+  const f=Math.max(0,S.left)/ROUND;
+  el.hand.setAttribute("stroke-dashoffset",String(138.23*(1-f)));
+  el.clockNum.textContent=String(Math.ceil(Math.max(0,S.left)));
+  el.clock.classList.toggle("low",S.left<10);
+}
+function collect(){
+  if(!S||S.phase!=="ask") return;
+  const v=el.guess.value.trim(); if(!v) return;
+  const p=S.prompts[S.i],m=matchAnswer(p,v);
+  if(!m){
+    S.left-=PENALTY; S.misses.push(v);
+    el.misses.innerHTML=S.misses.map(x=>`<span>${esc(x)}</span>`).join("");
+    el.feedback.textContent=`“${v}” isn't in the catalogue. −${PENALTY} s`; el.feedback.className="feedback bad";
+    el.guess.value=""; el.guess.classList.remove("shake"); void el.guess.offsetWidth; el.guess.classList.add("shake");
+    thunk(); renderClock(); return;
+  }
+  const tier=curatedTier(m.pts);
+  S.finds[S.i]={slot:S.i,name:m.name,cat:p.c,q:p.q,pid:p.id||null,misses:S.misses.slice(),pts:m.pts,tier,n:null,players:null};
+  clink(TIERS[tier].rank);
+  advance();
+}
+function skip(){
+  if(!S||S.phase!=="ask") return;
+  const p=S.prompts[S.i];
+  S.finds[S.i]={slot:S.i,name:null,cat:p.c,q:p.q,pid:p.id||null,misses:S.misses.slice(),pts:0,tier:null};
+  thunk(); advance();
+}
+function advance(){
+  if(S.i>=PROMPTS-1) return finishRound();
+  S.i++; askPrompt();
+}
+function finishRound(){
+  if(S.phase!=="ask") return;
+  S.phase="done"; el.guess.blur();
+  for(let i=0;i<PROMPTS;i++) if(!S.finds[i]){const p=S.prompts[i]; S.finds[i]={slot:i,name:null,cat:p.c,q:p.q,pid:p.id||null,misses:i===S.i?S.misses.slice():[],pts:0,tier:null}}
+  const rec={mode:S.mode,day:S.day,finds:S.finds,at:Date.now()};
+  if(S.mode==="daily") store.set("curio.day."+S.day,rec);
+  addToCabinet(rec);
+  renderReveal(rec,true);
+  if(S.mode==="daily") postDaily(rec);
+}
+
+/* ================= CARDS + REVEAL ================= */
+function foundText(f){
+  if(f.players>=LIVE_MIN&&f.n!=null){
+    if(f.n<=1) return `<span class="found live">Only you, of ${fmt(f.players)}</span>`;
+    const pct=f.n/f.players*100;
+    return `<span class="found live">Found by ${pct<1?"under 1":pct<10?pct.toFixed(1):Math.round(pct)}%</span>`;
+  }
+  return `<span class="found">Estimated grade</span>`;
+}
+function cardHTML(f,extra=""){
+  if(!f.name) return `<article class="card empty"><header><span>${esc(f.cat)}</span></header><div class="glyph">${glyph(f.cat)}</div><h3>Escaped</h3><p class="cq">${esc(f.q)}</p><footer><span class="found">No specimen</span></footer></article>`;
+  const t=TIERS[f.tier]||TIERS.common;
+  return `<article class="card t-${f.tier}${f.tier==="singular"?" shine":""}">${extra}<header><span>${f.no?"No. "+String(f.no).padStart(4,"0"):esc(f.cat)}</span><span>${f.no?esc(f.cat):""}</span></header><div class="glyph">${glyph(f.cat)}</div><h3>${esc(f.name)}</h3><p class="cq">${esc(f.q)}</p><footer><span class="stamp">${t.label}</span>${foundText(f)}</footer></article>`;
+}
+const drawerValue=rec=>rec.finds.reduce((s,f)=>s+(f.name?TIERS[f.tier].pts:0),0);
+function renderReveal(rec,animate){
+  const got=rec.finds.filter(f=>f.name).length;
+  $("#revKicker").textContent=rec.mode==="daily"?`Drawer No. ${rec.day}`:"Expedition";
+  $("#revTitle").textContent=got===5?"A full drawer.":got===0?"Everything escaped.":got>=3?"A fine haul.":"A few specimens.";
+  $("#revCount").textContent=`${got}/5`;
+  $("#revValue").textContent=fmt(drawerValue(rec));
+  const live=rec.finds.some(f=>f.players>=LIVE_MIN);
+  $("#liveBar").textContent=rec.mode!=="daily"?"Expedition finds are graded by the catalogue's estimates."
+    :live?"Grades are live: they come from everyone's answers to today's drawer, and update as more collectors play."
+    :"Grades are estimates until enough collectors have opened today's drawer. They update as people play.";
+  const box=$("#revCards");
+  box.classList.toggle("flip",!!animate&&!reduced);
+  box.innerHTML=rec.finds.map((f,i)=>cardHTML(f)).join("");
+  if(animate) [...box.children].forEach((c,i)=>c.style.animationDelay=(i*.14)+"s");
+  $("#shareText").textContent=shareText(rec);
+  $("#copyBtn").textContent="Copy result";
+  shownRec=rec;
+  $("#reportLine").hidden=!LIVE_ON;
+  if(rec.mode==="daily"&&BOARD[rec.day]) renderBoard(rec.day); else $("#board").hidden=true;
+  show("reveal");
+}
+function shareText(rec){
+  const got=rec.finds.filter(f=>f.name);
+  const rarest=got.slice().sort((a,b)=>(TIERS[b.tier].rank-TIERS[a.tier].rank)||((a.n??1e9)-(b.n??1e9)))[0];
+  let line="";
+  if(rarest){
+    let pct="";
+    if(rarest.players>=LIVE_MIN&&rarest.n!=null) pct=rarest.n<=1?" (only me!)":` (${(rarest.n/rarest.players*100<1?"<1":Math.round(rarest.n/rarest.players*100))}% found it)`;
+    line=`\nRarest: ${rarest.name}, ${TIERS[rarest.tier].label}${pct}`;
+  }
+  return `Curio ${rec.mode==="daily"?"No. "+rec.day:"expedition"} · ${got.length}/5 specimens\n${rec.finds.map(f=>f.name?TIERS[f.tier].sq:"⬛").join("")}${line}`;
+}
+function viewDay(day){
+  const rec=store.get("curio.day."+day,null); if(!rec) return;
+  renderReveal(rec,false); refreshLive(day);
+}
+
+/* ================= CABINET ================= */
+function addToCabinet(rec){
+  const cab=cabinet(); let seq=store.get("curio.seq",0);
+  for(const f of rec.finds){
+    if(!f.name) continue;
+    seq++; f.no=seq;
+    cab.push({no:seq,name:f.name,cat:f.cat,q:f.q,tier:f.tier,pts:f.pts,n:f.n,players:f.players,day:rec.day,slot:f.slot,mode:rec.mode,at:rec.at});
+  }
+  store.set("curio.seq",seq); store.set("curio.cabinet",cab);
+  if(rec.mode==="daily") store.set("curio.day."+rec.day,rec);
+}
+function shelfStats(cab){
+  const by=new Map();
+  for(const c of cab){
+    if(!by.has(c.cat)) by.set(c.cat,new Map());
+    const m=by.get(c.cat),k=norm(c.name),prev=m.get(k);
+    if(!prev) m.set(k,{...c,copies:1});
+    else{prev.copies++; if((TIERS[c.tier]?.rank||0)>(TIERS[prev.tier]?.rank||0)) Object.assign(prev,{...c,copies:prev.copies})}
+  }
+  return [...by.entries()].map(([cat,m])=>({cat,items:[...m.values()].sort((a,b)=>(TIERS[b.tier].rank-TIERS[a.tier].rank)||a.name.localeCompare(b.name)),unique:m.size}))
+    .sort((a,b)=>b.unique-a.unique||a.cat.localeCompare(b.cat));
+}
+function renderCabinet(){
+  const cab=cabinet(),shelves=shelfStats(cab),box=$("#shelves");
+  if(!cab.length){
+    box.innerHTML=`<div class="empty-state"><p>Your cabinet is empty. Open today's drawer to collect your first five specimens.</p><button type="button" class="btn" data-act="daily">Open today's drawer</button></div>`;
+  }else{
+    box.innerHTML=shelves.map(s=>{
+      const done=s.unique>=SHELF;
+      return `<section class="shelf"><div class="shelf-head"><span class="plaque${done?" done":""}">${esc(s.cat)} · ${Math.min(s.unique,SHELF)}/${SHELF}${done?" · complete":""}</span><div class="progress" aria-hidden="true"><i style="width:${Math.min(100,s.unique/SHELF*100)}%"></i></div></div>
+        <div class="cards">${s.items.map(it=>cardHTML(it,it.copies>1?`<span class="count">×${it.copies}</span>`:"")).join("")}</div></section>`;
+    }).join("");
+  }
+  $("#cabLede").textContent=cab.length?`${fmt(cab.length)} specimens across ${shelves.length} ${shelves.length===1?"shelf":"shelves"}. Each shelf holds twelve different specimens from one field.`:"Each shelf holds twelve different specimens from one field. Fill a shelf to earn its gold plaque.";
+  show("cabinet");
+}
+
+/* ================= LIVE RARITY (Supabase) =================
+   Each daily drawer posts one row per prompt; a database function returns
+   how many collectors found each answer. Raw rows stay private. */
+const LIVE_ON=!window.claude&&!!SUPA.url&&!!SUPA.key;
+const live={on:LIVE_ON,last:{}};
+function supaHeaders(extra){const h={apikey:SUPA.key,"Content-Type":"application/json",...extra}; if(SUPA.key.startsWith("eyJ")) h.Authorization="Bearer "+SUPA.key; return h}
+function playerId(){
+  let id=store.get("curio.pid",null);
+  if(!id){const b=crypto.getRandomValues(new Uint8Array(16)); b[6]=b[6]&15|64; b[8]=b[8]&63|128; const h=[...b].map(x=>x.toString(16).padStart(2,"0")).join(""); id=`${h.slice(0,8)}-${h.slice(8,12)}-${h.slice(12,16)}-${h.slice(16,20)}-${h.slice(20)}`; store.set("curio.pid",id)}
+  return id;
+}
+async function postDaily(rec){
+  if(!live.on) return;
+  const pid=playerId();
+  try{
+    const r=await fetch(`${SUPA.url}/rest/v1/curio_finds`,{method:"POST",headers:supaHeaders({Prefer:"return=minimal"}),
+      body:JSON.stringify(rec.finds.map(f=>({day:rec.day,player_id:pid,slot:f.slot,answer_key:f.name?norm(f.name):"-",est_pts:f.name?f.pts:0})))});
+    if(r.ok||r.status===409) store.set("curio.posted."+rec.day,true);
+  }catch(e){}
+  refreshLive(rec.day,true);
+}
+async function refreshLive(day,force){
+  if(!live.on) return;
+  if(!force&&Date.now()-(live.last[day]||0)<30000) return;
+  live.last[day]=Date.now();
+  const rec=store.get("curio.day."+day,null); if(!rec) return;
+  if(!store.get("curio.posted."+day,false)&&!force) return postDaily(rec);
+  refreshBoard(day);
+  let rows;
+  try{
+    const r=await fetch(`${SUPA.url}/rest/v1/rpc/curio_counts`,{method:"POST",headers:supaHeaders(),body:JSON.stringify({d:day})});
+    if(!r.ok) return; rows=await r.json();
+  }catch(e){return}
+  if(!Array.isArray(rows)||!rows.length) return;
+  const players=+rows[0].players||0;
+  let changed=false;
+  for(const f of rec.finds){
+    if(!f.name) continue;
+    const row=rows.find(x=>+x.slot===f.slot&&x.answer_key===norm(f.name));
+    if(!row) continue;   // our own post hasn't landed; keep the estimate
+    const n=+row.n, t=liveTier(n,players);
+    f.n=n; f.players=players;
+    if(t&&t!==f.tier){f.tier=t; changed=true}
+  }
+  store.set("curio.day."+day,rec);
+  const cab=cabinet();
+  for(const c of cab){
+    if(c.day!==day||c.mode!=="daily") continue;
+    const f=rec.finds.find(x=>x.slot===c.slot&&x.name===c.name);
+    if(f){c.n=f.n; c.players=f.players; c.tier=f.tier}
+  }
+  store.set("curio.cabinet",cab);
+  if(!el.reveal.hidden&&$("#revKicker").textContent===`Drawer No. ${day}`) renderReveal(rec,false);
+  else if(!el.home.hidden) renderHome();
+  if(changed) toast("Grades updated from today's collectors");
+}
+
+/* ================= DAILY LEADERBOARD =================
+   Ranked by drawer value, scored in the database with the same grading as the cards,
+   so the board re-ranks as grades go live. Names are optional and set once per device. */
+let shownRec=null;
+const BOARD={};   // day -> leaderboard rows
+async function refreshBoard(day){
+  if(!live.on) return;
+  try{
+    const r=await fetch(`${SUPA.url}/rest/v1/rpc/curio_board`,{method:"POST",headers:supaHeaders(),body:JSON.stringify({d:day,me:playerId()})});
+    if(!r.ok) return;
+    const rows=await r.json(); if(!Array.isArray(rows)) return;
+    BOARD[day]=rows;
+  }catch(e){return}
+  if(!el.reveal.hidden&&shownRec&&shownRec.mode==="daily"&&shownRec.day===day) renderBoard(day);
+}
+function renderBoard(day){
+  const rows=BOARD[day]||[],name=store.get("curio.name","");
+  const players=rows.length?+rows[0].players:0;
+  let html="",prev=0;
+  for(const r of rows){
+    const place=+r.place;
+    if(prev&&place>prev+1&&r.is_me) html+=`<li class="gap" aria-hidden="true">⋯</li>`;
+    prev=place;
+    const who=r.name||(r.is_me&&name)||"A collector";
+    html+=`<li class="${r.is_me?"me":""}"><span class="rk">${place}</span><span class="nm">${esc(who)}${r.is_me?" <small>(you)</small>":""}</span><span class="sc">${fmt(+r.score)}</span></li>`;
+  }
+  $("#boardList").innerHTML=html||`<li class="empty">Nobody has catalogued this drawer yet.</li>`;
+  $("#boardNote").innerHTML=`${fmt(players)} ${players===1?"collector":"collectors"} today`+(name?` · playing as ${esc(name)} <button type="button" class="linkbtn" data-act="rename">Change</button>`:"");
+  const form=$("#nameForm");
+  if(!name||form.dataset.open==="1") form.hidden=false; else form.hidden=true;
+  $("#board").hidden=false;
+}
+async function saveName(){
+  const v=$("#nameInput").value.replace(/[\u0000-\u001f]/g,"").trim().slice(0,20);
+  if(!v) return toast("Type a name first");
+  try{
+    const r=await fetch(`${SUPA.url}/rest/v1/rpc/curio_set_name`,{method:"POST",headers:supaHeaders(),body:JSON.stringify({pid:playerId(),nm:v})});
+    if(!r.ok) throw 0;
+  }catch(e){return toast("Couldn't save your name. Try again in a moment.")}
+  store.set("curio.name",v);
+  $("#nameForm").dataset.open="0";
+  toast("Name saved");
+  if(shownRec) refreshBoard(shownRec.day);
+}
+
+/* ================= WRONG-ANSWER REPORTS ================= */
+function openReport(){
+  const rec=shownRec; if(!rec) return;
+  const sel=$("#repPrompt");
+  sel.innerHTML=rec.finds.map((f,i)=>`<option value="${i}">${esc(f.q)}</option>`).join("");
+  const firstMiss=rec.finds.findIndex(f=>f.misses&&f.misses.length);
+  sel.value=String(Math.max(0,firstMiss));
+  $("#reportForm").reset(); sel.value=String(Math.max(0,firstMiss));
+  fillReport();
+  $("#report").hidden=false; sel.focus();
+}
+function fillReport(){
+  const f=shownRec.finds[+$("#repPrompt").value]||{},kind=$("#reportForm").repKind.value;
+  $("#repAnswer").value=kind==="accepted"?(f.name||""):kind==="rejected"?((f.misses||[]).slice(-1)[0]||""):"";
+}
+function closeReport(){$("#report").hidden=true}
+async function sendReport(){
+  const rec=shownRec,f=rec.finds[+$("#repPrompt").value]; if(!f) return;
+  const body={day:rec.mode==="daily"?rec.day:null,mode:rec.mode,prompt_id:f.pid||null,prompt:f.q,
+    kind:$("#reportForm").repKind.value,answer:$("#repAnswer").value.trim().slice(0,80)||null,
+    note:$("#repNote").value.trim().slice(0,500)||null,player_id:playerId()};
+  const b=$("#repSend"); b.disabled=true;
+  try{
+    const r=await fetch(`${SUPA.url}/rest/v1/curio_reports`,{method:"POST",headers:supaHeaders({Prefer:"return=minimal"}),body:JSON.stringify(body)});
+    if(!r.ok) throw 0;
+    closeReport(); toast("Thanks! Report sent.");
+  }catch(e){toast("Couldn't send the report. Try again in a moment.")}
+  finally{b.disabled=false}
+}
+
+/* ================= EVENTS ================= */
+document.addEventListener("click",async e=>{
+  const b=e.target.closest("[data-act]"); if(!b) {if(e.target===el.how) closeHow(); else if(e.target===$("#report")) closeReport(); return}
+  const a=b.dataset.act;
+  if(a==="daily") startRound("daily");
+  else if(a==="expedition") startRound("expedition");
+  else if(a==="viewday") viewDay(dayNo());
+  else if(a==="skip") skip();
+  else if(a==="home"){if(S&&S.phase==="ask") return toast("Finish or skip the prompts first"); S=null; renderHome(); show("home")}
+  else if(a==="cabinet"){if(S&&S.phase==="ask") return toast("Finish or skip the prompts first"); renderCabinet()}
+  else if(a==="how"){el.how.hidden=false; $("#closeHow").focus()}
+  else if(a==="closehow") closeHow();
+  else if(a==="report") openReport();
+  else if(a==="closereport") closeReport();
+  else if(a==="rename"){const f=$("#nameForm"); f.dataset.open="1"; f.hidden=false; const i=$("#nameInput"); i.value=store.get("curio.name",""); i.focus(); i.select()}
+  else if(a==="mute"){muted=!muted; store.set("curio.mute",muted); renderMute(); if(!muted) clink(2)}
+  else if(a==="copy"){
+    const pre=$("#shareText");
+    try{await navigator.clipboard.writeText(pre.textContent); b.textContent="Copied"}
+    catch(err){const r=document.createRange(); r.selectNodeContents(pre); const s=getSelection(); s.removeAllRanges(); s.addRange(r); b.textContent="Selected: press Ctrl+C or ⌘C"}
+  }
+});
+function closeHow(){el.how.hidden=true; if(S&&S.phase==="ask") el.guess.focus({preventScroll:true})}
+el.form.addEventListener("submit",e=>{e.preventDefault(); collect()});
+$("#nameForm").addEventListener("submit",e=>{e.preventDefault(); saveName()});
+$("#reportForm").addEventListener("submit",e=>{e.preventDefault(); sendReport()});
+$("#reportForm").addEventListener("change",e=>{if(e.target.id==="repPrompt"||e.target.name==="repKind") fillReport()});
+document.addEventListener("keydown",e=>{if(e.key!=="Escape") return; if(!el.how.hidden) closeHow(); else if(!$("#report").hidden) closeReport()});
+function renderMute(){const b=$("#muteChip"); b.textContent=muted?"Muted":"Sound"; b.setAttribute("aria-label",muted?"Sound is off; turn it on":"Sound is on; turn it off")}
+$("#legend").innerHTML=Object.entries(TIERS).map(([k,t])=>`<div><span class="stamp" style="--tc:var(--r-${k});color:var(--r-${k});border-color:var(--r-${k})">${t.label}</span><span>${{common:"Found by more than 1 in 5 collectors",scarce:"Found by 5–20%",rare:"Found by 1–5%",remarkable:"Found by under 1%",singular:"Nobody else found it today"}[k]} · ${t.pts} points</span></div>`).join("");
+
+function boot(){
+  renderMute(); renderHome(); show("home");
+  setInterval(()=>{if(!el.home.hidden) tickNext()},30000);
+  if(!store.get("curio.seenHow",false)){store.set("curio.seenHow",true); el.how.hidden=false}
+}
+window.claude?.hot?.ready?window.claude.hot.ready(boot):boot();
+</script>
+
+</body>
+</html>
