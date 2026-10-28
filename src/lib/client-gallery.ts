@@ -183,7 +183,7 @@ export const getClientFolder = createServerFn({ method: "GET" })
     return { available: true as const, locked: false as const, folder };
   });
 
-/** Checks the gallery password and, if right, sets a 30-day session cookie. */
+/** Checks the gallery password and, if right, sets a 3-day session cookie. */
 export const unlockGallery = createServerFn({ method: "POST" })
   .validator((password: unknown) => (typeof password === "string" ? password.slice(0, 200) : ""))
   .handler(async ({ data: password }) => {
