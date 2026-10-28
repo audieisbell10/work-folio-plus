@@ -6,12 +6,12 @@
 //   Set it:    Cloudflare dashboard → Workers & Pages → audieisbell →
 //              Settings → Variables and Secrets → Add → Type "Secret"
 //   Or:        npx wrangler secret put CLIENT_GALLERY_PASSWORD
-// Changing the password signs everyone out (old cookies stop matching).
+// Visitors are asked again every 3 days. Changing the password signs everyone out.
 // If the secret isn't set, the gallery stays locked for everyone.
 // ----------------------------------------------------------------
 
 export const GALLERY_COOKIE = "gallery_session";
-export const GALLERY_COOKIE_MAX_AGE = 60 * 60 * 24 * 30; // 30 days
+export const GALLERY_COOKIE_MAX_AGE = 60 * 60 * 24 * 3; // 3 days, then the password is asked again
 
 const enc = new TextEncoder();
 
@@ -56,9 +56,14 @@ function sameBytes(a: Uint8Array, b: Uint8Array) {
   return diff === 0;
 }
 
-/** The cookie value for a password. Derived from the password, so it can't be forged without it. */
-export async function sessionToken(password: string) {
-  return toB64Url(await hmac(password, "workfolio-client-gallery-session-v1"));
+/**
+ * The cookie value: "<issued-at seconds>.<signature>". The signature covers the
+ * time and is keyed by the password, so it can't be forged or have its date
+ * pushed forward without knowing the password.
+ */
+export async function sessionToken(password: string, issuedAt = Math.floor(Date.now() / 1000)) {
+  const sig = toB64Url(await hmac(password, `workfolio-client-gallery-session-v2:${issuedAt}`));
+  return `${issuedAt}.${sig}`;
 }
 
 /** True when `guess` matches the configured password. */
@@ -85,5 +90,11 @@ export async function isGalleryUnlocked(cookieHeader: string | null | undefined)
   if (!password) return false;
   const got = readCookie(cookieHeader, GALLERY_COOKIE);
   if (!got) return false;
-  return sameBytes(enc.encode(got), enc.encode(await sessionToken(password)));
+  const issuedAt = Number(got.split(".")[0]);
+  if (!Number.isInteger(issuedAt)) return false;
+  // Enforced here too, not just by the browser's cookie expiry, so a copied
+  // cookie stops working after 3 days no matter where it's used.
+  const age = Math.floor(Date.now() / 1000) - issuedAt;
+  if (age < -300 || age > GALLERY_COOKIE_MAX_AGE) return false;
+  return sameBytes(enc.encode(got), enc.encode(await sessionToken(password, issuedAt)));
 }
