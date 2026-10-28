@@ -1,0 +1,8 @@
+# Security headers for static files (Cloudflare Workers Static Assets).
+# Pages rendered by the Worker get the same set from src/lib/security-headers.ts.
+/*
+  Content-Security-Policy: frame-ancestors 'self' https://lovable.dev https://*.lovable.dev https://*.lovable.app; base-uri 'self'; object-src 'none'; form-action 'self'
+  Strict-Transport-Security: max-age=31536000
+  X-Content-Type-Options: nosniff
+  Referrer-Policy: strict-origin-when-cross-origin
+  Permissions-Policy: camera=(), microphone=(), geolocation=(), payment=()

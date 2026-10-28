@@ -11,12 +11,13 @@ import {
 import { ClientGalleryHeader } from "../components/client-gallery-header";
 import { ClientPhoto } from "../components/client-photo";
 import { ClientFolderGrid } from "../components/client-folder-card";
+import { GalleryLock } from "../components/gallery-lock";
 
 // Any folder in the bucket, at any depth: /clients/homecoming-2026/luke-and-bae
 export const Route = createFileRoute("/clients/$")({
   loader: async ({ params }) => {
     const result = await getClientFolder({ data: params._splat ?? "" });
-    if (result.available && !result.folder) throw notFound();
+    if (result.available && !result.locked && !result.folder) throw notFound();
     return result;
   },
   head: ({ loaderData }) => ({
@@ -34,8 +35,20 @@ export const Route = createFileRoute("/clients/$")({
 });
 
 function FolderPage() {
-  const { folder } = Route.useLoaderData();
+  const { locked, folder } = Route.useLoaderData();
   const [open, setOpen] = useState<number | null>(null);
+
+  if (locked) {
+    return (
+      <Shell>
+        <p className="text-xs uppercase tracking-[0.2em] text-secondary">Client Gallery</p>
+        <h1 className="mt-4 font-serif text-4xl leading-[1.1] md:text-5xl">
+          Your photos are waiting.
+        </h1>
+        <GalleryLock />
+      </Shell>
+    );
+  }
 
   if (!folder) {
     return (
@@ -102,7 +115,11 @@ function FolderPage() {
               key={photo.key}
               className="group relative mb-3 break-inside-avoid overflow-hidden rounded-sm bg-muted md:mb-4"
             >
-              <button type="button" onClick={() => setOpen(i)} className="block w-full cursor-zoom-in">
+              <button
+                type="button"
+                onClick={() => setOpen(i)}
+                className="block w-full cursor-zoom-in"
+              >
                 <ClientPhoto
                   photoKey={photo.key}
                   width={800}
@@ -231,7 +248,12 @@ function Lightbox({
             <Download className="size-4" />
             Download original
           </a>
-          <button type="button" onClick={onClose} aria-label="Close" className="p-2 opacity-70 hover:opacity-100">
+          <button
+            type="button"
+            onClick={onClose}
+            aria-label="Close"
+            className="p-2 opacity-70 hover:opacity-100"
+          >
             <X className="size-5" />
           </button>
         </div>
